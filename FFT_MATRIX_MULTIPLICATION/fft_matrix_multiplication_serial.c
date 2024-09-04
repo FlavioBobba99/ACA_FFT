@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <complex.h>
 
 /*
     Structure to holdi the image data. This structre
@@ -55,6 +56,7 @@ double **allocate_matrix(int width, int height) {
     The scale factor could be caluclated in the method or outside
     by passing the max value or the factori directly.
 */
+
 void writePPM(const char *filename, Image *img, float scale_factor) {
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
@@ -79,7 +81,8 @@ void writePPM(const char *filename, Image *img, float scale_factor) {
     fclose(fp);
 }
 
-// Function to free the allocated memory
+// Function to free the allocated memory, it frees row by row and then the array holding the arrays
+
 void free_matrix(double **matrix, int height) {
     for (int i = 0; i < height; i++) {
         free(matrix[i]);
@@ -87,7 +90,18 @@ void free_matrix(double **matrix, int height) {
     free(matrix);
 }
 
-// Function to read the PPM file and fill the Image structure
+/*
+    Function to read the PPM file and fill the Image structure
+
+    This function reads bytewise the triads that make up pixels, 
+    each byte is casted in to a double in order to be saved in to the 
+    matrix of the corrisponding color and perform the transformate
+    with it.
+
+    The cases of the different possibilities in the file handling are 
+    seen below.
+*/
+
 Image *read_ppm(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
@@ -166,6 +180,78 @@ void print_image(Image *img) {
     }
 }
 
+/*
+    FFT function
+
+    This function calculates the fft in a serial way
+    it takes as an input an image structure and returns
+    a new structure containing the FFT of each pixel matrix
+*/
+
+Image *FFT_image(Image *img){
+    
+    int height = img->height;
+    int width = img->width;
+
+    if((width % 2 == 0)&&(height % 2 == 0)){
+        printf("The image has a size multiple of 2\n");
+    } else {
+        printf("ERROR incompatible size!\n");
+    }
+
+
+}
+
+float *FFT_serial(double *sequence){
+
+}
+
+/*
+    This function it serves mainly debug porpouses.
+    it prints a complex matrix 
+*/
+
+void print_complex_matrix(double complex **matrix, int n_rows, int n_columns){
+
+    printf("Pringing matrix...\n");
+
+    for (int i = 0; i<n_rows; i++){
+        for (int j = 0; j<n_columns; j++){
+            printf("%.2f %.2fi ",creal(matrix[i][j]), cimag(matrix[i][j]));
+        }
+        printf("\n");
+    } 
+}
+
+/*
+    This function calculates the transformate matrix.
+
+    It returns a transformate matrix to perform the fft of 
+    type double complex, it takes as an imput the lenght of
+    the sequence to be transformed
+*/
+
+double complex **compute_transform_matrix(int sequence_lenght){
+
+    double complex **matrix = (double complex **)malloc(sequence_lenght*sizeof(double complex *));
+    
+    for (int h = 0; h<sequence_lenght; h++){
+        matrix[h] = (double complex *)malloc(sequence_lenght * sizeof(double complex));
+    }
+
+    double complex debug_value = 0;
+
+    for (int i = 0; i<sequence_lenght; i++){
+        for (int j = 0; j<sequence_lenght; j++){
+            matrix[i][j] = debug_value;
+            debug_value = debug_value +1;
+        }
+    }
+    print_complex_matrix(matrix, sequence_lenght, sequence_lenght);
+
+    return matrix;
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <image_path>\n", argv[0]);
@@ -180,6 +266,9 @@ int main(int argc, char *argv[]) {
     writePPM(new_image, img, scale_factor);
 
     print_image(img);  // For debugging, can be removed if not needed
+
+    //FFT_image(img);
+    compute_transform_matrix(10);
 
     free_image(img);
     return 0;
