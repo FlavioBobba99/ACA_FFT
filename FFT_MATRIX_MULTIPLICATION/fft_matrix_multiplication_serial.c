@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <complex.h>
 
+#define PI 3.14159265358979323846
+
+
 /*
     Structure to holdi the image data. This structre
     utilizes 3 matrices to memorize the RGB values of each image.
@@ -211,13 +214,13 @@ float *FFT_serial(double *sequence){
     it prints a complex matrix 
 */
 
-void print_complex_matrix(double complex **matrix, int n_rows, int n_columns){
+void print_double_matrix(double  **matrix, int n_rows, int n_columns){
 
     printf("Pringing matrix...\n");
 
     for (int i = 0; i<n_rows; i++){
         for (int j = 0; j<n_columns; j++){
-            printf("%.2f %.2fi ",creal(matrix[i][j]), cimag(matrix[i][j]));
+            printf("%.2f ",matrix[i][j]);
         }
         printf("\n");
     } 
@@ -228,26 +231,32 @@ void print_complex_matrix(double complex **matrix, int n_rows, int n_columns){
 
     It returns a transformate matrix to perform the fft of 
     type double complex, it takes as an imput the lenght of
-    the sequence to be transformed
+    the sequence to be transformed. 
+
+
+    //TODO
+    THE RETURNED MATRIX RETURNS JUST THE PHASE OF THE COMPLEX
+    NUMBER. INVESTIGATION IN EFFICENCY FOR THIS APPROACH  MUST 
+    BE FURTHER INVESTIGATED!!!
 */
 
-double complex **compute_transform_matrix(int sequence_lenght){
+double **compute_transform_matrix(int sequence_lenght){
 
-    double complex **matrix = (double complex **)malloc(sequence_lenght*sizeof(double complex *));
+    double  **matrix = (double  **)malloc(sequence_lenght*sizeof(double  *));
     
     for (int h = 0; h<sequence_lenght; h++){
-        matrix[h] = (double complex *)malloc(sequence_lenght * sizeof(double complex));
+        matrix[h] = (double  *)malloc(sequence_lenght * sizeof(double ));
     }
 
-    double complex debug_value = 0;
+    double  debug_value = 0;
 
     for (int i = 0; i<sequence_lenght; i++){
         for (int j = 0; j<sequence_lenght; j++){
-            matrix[i][j] = debug_value;
+            matrix[i][j] = -2*PI*i*j/sequence_lenght;         //The phase is calculated with the following -2*PI*i*j/SEQUENCE_LENGHT
             debug_value = debug_value +1;
         }
     }
-    print_complex_matrix(matrix, sequence_lenght, sequence_lenght);
+    print_double_matrix(matrix, sequence_lenght, sequence_lenght);
 
     return matrix;
 }
@@ -268,7 +277,7 @@ int main(int argc, char *argv[]) {
     print_image(img);  // For debugging, can be removed if not needed
 
     //FFT_image(img);
-    compute_transform_matrix(10);
+    compute_transform_matrix(4);
 
     free_image(img);
     return 0;
