@@ -151,19 +151,65 @@ void print_image(Image *img) {
     }
 }
 
-double *FFT(double *provavett, int lenghtvett) {
-	if (lenghtvett ==1){
-		return provavett;
-	}
-	double r= 1.0;
-	double theta= (2*PI)/lenghtvett; 
-	
-	double complex w= cpow(r, theta);
-	
-	printf("%f i%f",creal(w), cimag(w));
-	
-	return provavett;
-	
+double complex* FFT(double *provavett, int lengthvett) {
+    // Base case: lengthvett == 1
+    if (lengthvett == 1) {
+        double complex *single_out = malloc(sizeof(double complex));
+        if (single_out == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+        single_out[0] = provavett[0] + 0.0 * I;
+        return single_out;
+    }
+
+    /*
+        Malloc must be used in this case because allocating 
+        a variable like a pointer in the normal way, inside a nested
+        call, when the function terminates the variable is deallocated 
+        casing undefined behaviour
+    */
+
+    int split_length = lengthvett / 2;
+    double theta = (2 * PI) / lengthvett;
+    double complex w = cos(theta) + I * sin(theta);
+
+    // Allocate memory for even and odd arrays
+    double *even = malloc(split_length * sizeof(double));
+    double *odd = malloc(split_length * sizeof(double));
+    if (even == NULL || odd == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < split_length; i++) {
+        even[i] = provavett[2 * i];
+        odd[i] = provavett[2 * i + 1];
+    }
+
+    // Recursively compute FFT for even and odd parts
+    double complex *y_even = FFT(even, split_length);
+    double complex *y_odd = FFT(odd, split_length);
+
+    // Allocate memory for output
+    double complex *out = malloc(lengthvett * sizeof(double complex));
+    if (out == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < split_length; i++) {
+        out[i] = y_even[i] + cpow(w, i) * y_odd[i];
+        out[i + split_length] = y_even[i] - cpow(w, i) * y_odd[i];
+    }
+
+    // Free allocated memory for even and odd arrays
+    free(even);
+    free(odd);
+    free(y_even);
+    free(y_odd);
+
+    return out;
 }
 
 int main(int argc, char *argv[]) {
@@ -179,10 +225,18 @@ int main(int argc, char *argv[]) {
     //double scale_factor = 0.2;
     //writePPM(new_image, img, scale_factor);
 
-    print_image(img);  // For debugging, can be removed if not needed
+   // print_image(img);  // For debugging, can be removed if not needed
 
     free_image(img);
-    double test[4] = {1.0, 3.3, 2.0, PI};
-    FFT(test, 4);
+    int  n = 8;
+    double data[] = {1, 2, 3, 4, 5, 6, 7, 8};
+    double complex *result = FFT(data, n);
+
+    for (int i = 0; i < n; i++) {
+        printf("FFT[%d] = %f + %fi\n", i, creal(result[i]), cimag(result[i]));
+    }
+
+    free(result);
+    
     return 0;
 }
