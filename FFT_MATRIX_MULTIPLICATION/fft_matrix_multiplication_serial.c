@@ -253,13 +253,14 @@ double **compute_transform_matrix(int sequence_lenght){
     for (int i = 0; i<sequence_lenght; i++){
         for (int j = 0; j<sequence_lenght; j++){
             matrix[i][j] = -2*PI*i*j/sequence_lenght;         //The phase is calculated with the following -2*PI*i*j/SEQUENCE_LENGHT
-            debug_value = debug_value +1;
         }
     }
     print_double_matrix(matrix, sequence_lenght, sequence_lenght);
 
     return matrix;
 }
+
+
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -277,7 +278,7 @@ int main(int argc, char *argv[]) {
     print_image(img);  // For debugging, can be removed if not needed
 
     //FFT_image(img);
-    compute_transform_matrix(4);
+    compute_transform_matrix(10);
 
     free_image(img);
     return 0;
