@@ -27,6 +27,7 @@ double **allocate_matrix(int width, int height) {
     return matrix;
 }
 
+
 // TODO expand this method: 
 /*
     The method must scale the int values before casting them

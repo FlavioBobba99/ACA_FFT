@@ -31,6 +31,16 @@ double **allocate_matrix(int width, int height) {
     return matrix;
 }
 
+// Function to allocate memory for the complex matrices
+double complex **allocate_complex_matrix(int width, int height) {
+    double complex **matrix = (double complex **)malloc(height * sizeof(double complex *));
+    for (int i = 0; i < height; i++) {
+        matrix[i] = (double complex *)malloc(width * sizeof(double complex));
+    }
+    return matrix;
+}
+
+
 // TODO expand this method: 
 /*
     The method must scale the int values before casting them
@@ -66,6 +76,14 @@ void writePPM(const char *filename, Image *img, float scale_factor) {
 
 // Function to free the allocated memory
 void free_matrix(double **matrix, int height) {
+    for (int i = 0; i < height; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
+}
+
+// Function to free a 2D complex matrix
+void free_complex_matrix(double complex **matrix, int height) {
     for (int i = 0; i < height; i++) {
         free(matrix[i]);
     }
@@ -211,6 +229,17 @@ double complex* FFT(double *provavett, int lengthvett) {
 
     return out;
 }
+
+double complex **matrix_FFT (double complex **matrix, int width, int height) { 
+	double complex **out_matrix = allocate_complex_matrix(width, height);
+	
+	for (int i = 0; i < height; i++) {
+		
+		}
+	
+	
+	return out_matrix;
+	}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
