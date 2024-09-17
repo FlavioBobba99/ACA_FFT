@@ -402,8 +402,14 @@ double complex **convert_to_complex_matrix(double **matrix, int rows, int cols) 
 }
 
 void FFT_image(Image *in, Image *module, Image *phase){
+
     int height = in->height;
     int width = in->width;
+
+    module->height = height;
+    module->width = width;
+    phase->height = height;
+    phase->width = width;
 
     // Check if 'in' has valid pointers for 'red'
     if (in->red == NULL) {
@@ -412,23 +418,61 @@ void FFT_image(Image *in, Image *module, Image *phase){
     }
 
     double complex **temp_red = convert_to_complex_matrix(in->red, height, width);
-    printf("Matrix converted\n");
+    double complex **temp_green = convert_to_complex_matrix(in->green, height, width);
+    double complex **temp_blue = convert_to_complex_matrix(in->blue, height, width);
+
+    printf("Matrices converted :)\n");
 
     // Check if matrix_FFT handles memory properly
     double complex **complex_red = matrix_FFT(temp_red, width, height);
     if (complex_red == NULL) {
-        fprintf(stderr, "FFT computation failed\n");
+        fprintf(stderr, "FFT RED computation failed\n");
         return;
     }
 
+    double complex **complex_green = matrix_FFT(temp_green, width, height);
+    if (complex_red == NULL) {
+        fprintf(stderr, "FFT GREEN computation failed\n");
+        return;
+    }
+
+    double complex **complex_blue = matrix_FFT(temp_blue, width, height);
+    if (complex_red == NULL) {
+        fprintf(stderr, "FFT BLUE computation failed\n");
+        return;
+    }
+   /* printf("-------------------------------- RED --------------------------------\n");
     print_complex_matrix(complex_red, height, width);
+    printf("-------------------------------- GREEN --------------------------------\n");
+    print_complex_matrix(complex_green, height, width);
+    printf("-------------------------------- BLUE --------------------------------\n");
+    print_complex_matrix(complex_blue, height, width);
+    */
+
 
     // Free allocated memory (example, modify as necessary)
-    for (int i = 0; i < height; i++) {
-        free(temp_red[i]);
-    }
-    free(temp_red);
+    free_complex_matrix(temp_red, height);
+    free_complex_matrix(temp_green, height);
+    free_complex_matrix(temp_blue, height);
 
+    module->red = allocate_matrix(width, height);
+    phase->red = allocate_matrix(width, height);
+    module->green = allocate_matrix(width, height);
+    phase->green = allocate_matrix(width, height);
+    module->blue = allocate_matrix(width, height);
+    phase->blue = allocate_matrix(width, height);
+
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+            module->red[i][j] = creal(complex_red[i][j]);
+            phase->red[i][j] = cimag(complex_red[i][j]);
+            module->green[i][j] = creal(complex_green[i][j]);
+            phase->green[i][j] = cimag(complex_green[i][j]);
+            module->blue[i][j] = creal(complex_blue[i][j]);
+            phase->blue[i][j] = cimag(complex_blue[i][j]);
+            
+        }
+    }
     // Free complex_red if necessary (depends on the implementation of matrix_FFT)
 }
 
@@ -441,8 +485,10 @@ int main(int argc, char *argv[]) {
 
     const char *filename = argv[1];
     Image *img = read_ppm(filename);
+    Image module;
+    Image phase;
     
-    //char new_image[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/test_out1.ppm";
+    char module_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/module_out_test_1.ppm";
     //double scale_factor = 0.2;
     //writePPM(new_image, img, scale_factor);
 
@@ -478,8 +524,15 @@ int main(int argc, char *argv[]) {
 
     print_complex_matrix(result_matrix, 4, 8);
 
-    FFT_image(img,img,img);
+    FFT_image(img,&module,&phase);
+
+    writePPM(module_out, &module, 0.5);
+
+    printf("Image trnasformed and saved!\n");
+
     free_image(img);
+    free_image(&module);
+    free_image(&phase);
     
     return 0;
 }
