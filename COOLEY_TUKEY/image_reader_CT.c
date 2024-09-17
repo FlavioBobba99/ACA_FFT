@@ -50,6 +50,28 @@ void print_complex_matrix(double complex **matrix, int rows, int cols) {
     }
 }
 
+void fftshift(double** input, double** output, int height, int width) {
+    int half_height = height / 2;
+    int half_width = width / 2;
+
+    // Shift each quadrant into its new position
+    for (int i = 0; i < half_height; i++) {
+        for (int j = 0; j < half_width; j++) {
+            // Top-left to bottom-right
+            output[i + half_height][j + half_width] = input[i][j];
+
+            // Bottom-right to top-left
+            output[i][j] = input[i + half_height][j + half_width];
+
+            // Top-right to bottom-left
+            output[i + half_height][j] = input[i][j + half_width];
+
+            // Bottom-left to top-right
+            output[i][j + half_width] = input[i + half_height][j];
+        }
+    }
+}
+
 // TODO expand this method: 
 /*
     The method must scale the int values before casting them
@@ -60,6 +82,16 @@ void print_complex_matrix(double complex **matrix, int rows, int cols) {
     by passing the max value or the factori directly.
 */
 void writePPM(const char *filename, Image *img, float scale_factor) {
+
+    double **shifted_red = allocate_matrix(img->width, img->height);
+    double **shifted_green= allocate_matrix(img->width, img->height);
+    double **shifted_blue = allocate_matrix(img->width, img->height);
+
+    fftshift(img->red, shifted_red, img->height, img->width);
+    fftshift(img->green, shifted_green,img->height, img->width);
+    fftshift(img->blue, shifted_blue, img->height, img->width);
+
+
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
         perror("Unable to open file");
@@ -73,9 +105,11 @@ void writePPM(const char *filename, Image *img, float scale_factor) {
     for (int i = 0; i < img->height; i++) {
         for (int j = 0; j < img->width; j++) {
             unsigned char pixel[3];
-            pixel[0] = (unsigned char)img->red[i][j]*scale_factor;
-            pixel[1] = (unsigned char)img->green[i][j]*scale_factor;
-            pixel[2] = (unsigned char)img->blue[i][j]*scale_factor;
+            pixel[0] = (unsigned char)(shifted_red[i][j]*scale_factor);
+            pixel[1] = (unsigned char)(shifted_green[i][j]*scale_factor);
+            //printf("PRE BLUE VALUE = %f \n", shifted_blue[i][j]*scale_factor);
+            pixel[2] = (unsigned char)(shifted_blue[i][j]*scale_factor);
+          //  printf("BLUE VALUE = %d \n", pixel[2]);
             fwrite(pixel, sizeof(unsigned char), 3, fp);
         }
     }
@@ -88,7 +122,6 @@ void free_matrix(double **matrix, int height) {
     for (int i = 0; i < height; i++) {
         free(matrix[i]);
     }
-    free(matrix);
 }
 
 // Function to free a 2D complex matrix
@@ -324,6 +357,8 @@ double complex **matrix_FFT (double complex **matrix, int width, int height) {
             }
             free(out_vect);
 		}
+    printf("----------------- DEBUG ----------------\n");
+    //print_complex_matrix(temporary_matrix,height, width);
 
     transpose(temporary_matrix, temporary_transposed_matrix, width, height);
     free_complex_matrix(temporary_matrix, height);
@@ -408,8 +443,10 @@ void FFT_image(Image *in, Image *module, Image *phase){
 
     module->height = height;
     module->width = width;
+    module->max_color = 255;
     phase->height = height;
     phase->width = width;
+    phase->max_color = 255;
 
     // Check if 'in' has valid pointers for 'red'
     if (in->red == NULL) {
@@ -441,13 +478,13 @@ void FFT_image(Image *in, Image *module, Image *phase){
         fprintf(stderr, "FFT BLUE computation failed\n");
         return;
     }
-   /* printf("-------------------------------- RED --------------------------------\n");
-    print_complex_matrix(complex_red, height, width);
+    printf("-------------------------------- RED --------------------------------\n");
+    //print_complex_matrix(complex_red, height, width);
     printf("-------------------------------- GREEN --------------------------------\n");
-    print_complex_matrix(complex_green, height, width);
+    //print_complex_matrix(complex_green, height, width);
     printf("-------------------------------- BLUE --------------------------------\n");
-    print_complex_matrix(complex_blue, height, width);
-    */
+    //print_complex_matrix(complex_blue, height, width);
+    
 
 
     // Free allocated memory (example, modify as necessary)
@@ -464,18 +501,109 @@ void FFT_image(Image *in, Image *module, Image *phase){
 
     for(int i = 0; i < height; i++){
         for(int j = 0; j < width; j++){
-            module->red[i][j] = creal(complex_red[i][j]);
+            module->red[i][j] =  creal(complex_red[i][j]); 
             phase->red[i][j] = cimag(complex_red[i][j]);
             module->green[i][j] = creal(complex_green[i][j]);
             phase->green[i][j] = cimag(complex_green[i][j]);
             module->blue[i][j] = creal(complex_blue[i][j]);
-            phase->blue[i][j] = cimag(complex_blue[i][j]);
+            phase->blue[i][j] =  cimag(complex_blue[i][j]);
             
         }
     }
     // Free complex_red if necessary (depends on the implementation of matrix_FFT)
 }
 
+
+int closest_square(int target){
+
+    int square = 1;
+
+    while(square<target){
+        square *= 2;
+    }
+    return square;
+}
+
+void zero_padding(Image *in, Image *out){
+
+}
+
+double find_scale_factor(Image *img){
+
+    double scale = 1.0;
+    double max_value = 0;
+
+    for(int i = 0; i < img->height; i++){
+        for(int j = 0; j < img->width; j++){
+            if(img->red[i][j]>max_value){
+                max_value = img->red[i][j];
+            }
+        }
+    }
+
+     for(int i = 0; i < img->height; i++){
+        for(int j = 0; j < img->width; j++){
+            if(img->green[i][j]>max_value){
+                max_value = img->green[i][j];
+            }
+        }
+    }
+
+     for(int i = 0; i < img->height; i++){
+        for(int j = 0; j < img->width; j++){
+            if(img->blue[i][j]>max_value){
+                max_value = img->blue[i][j];
+            }
+        }
+    }
+    
+    scale = (255 / max_value);
+    printf("SCALE FACTOR = %f\n", scale);
+    printf("MAX VALUE = %f\n", max_value);
+    return scale;
+}
+
+Image* pad_image(const Image* input_image) {
+    // Determine the new padded width and height (next power of 2)
+    int new_width = closest_square(input_image->width);
+    int new_height = closest_square(input_image->height);
+
+    // Allocate memory for the new padded image
+    Image* padded_image = (Image*)malloc(sizeof(Image));
+    if (!padded_image) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the dimensions of the padded image
+    padded_image->width = new_width;
+    padded_image->height = new_height;
+    padded_image->max_color = input_image->max_color;
+
+    // Allocate matrices for the color channels using your allocate_matrix function
+    padded_image->red = allocate_matrix(new_height, new_width);
+    padded_image->green = allocate_matrix(new_height, new_width);
+    padded_image->blue = allocate_matrix(new_height, new_width);
+
+    // Initialize the padded matrices with zero and copy the original image data
+    for (int i = 0; i < new_height; i++) {
+        for (int j = 0; j < new_width; j++) {
+            if (i < input_image->height && j < input_image->width) {
+                // Copy original pixel values
+                padded_image->red[i][j] = input_image->red[i][j];
+                padded_image->green[i][j] = input_image->green[i][j];
+                padded_image->blue[i][j] = input_image->blue[i][j];
+            } else {
+                // Zero padding for the extra rows and columns
+                padded_image->red[i][j] = 0.0;
+                padded_image->green[i][j] = 0.0;
+                padded_image->blue[i][j] = 0.0;
+            }
+        }
+    }
+
+    return padded_image;
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -487,12 +615,14 @@ int main(int argc, char *argv[]) {
     Image *img = read_ppm(filename);
     Image module;
     Image phase;
+
+    Image *padded_image = pad_image(img);
     
     char module_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/module_out_test_1.ppm";
     //double scale_factor = 0.2;
     //writePPM(new_image, img, scale_factor);
 
-   // print_image(img);  // For debugging, can be removed if not needed
+   // print_image(img);  // For debugging, can be removed if not need65280ed
 
     
   /*  int  n = 8;
@@ -505,7 +635,7 @@ int main(int argc, char *argv[]) {
 
     free(result);*/
 
-    int rows = 4, cols = 8;
+    int rows = 4, cols = 4;
 
     // Dynamically allocate memory for the matrix
     double complex **matrix = malloc(rows * sizeof(double complex*));
@@ -516,23 +646,27 @@ int main(int argc, char *argv[]) {
     // Initialize the matrix with some values
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            matrix[i][j] = i + j * I;
+            matrix[i][j] = 1 + 0 * I;
         }
     }
 
-    double complex **result_matrix = matrix_FFT(matrix, 8,4);
+    double complex **result_matrix = matrix_FFT(matrix, 4,4);
+    
+    print_complex_matrix(result_matrix, 4, 4);
 
-    print_complex_matrix(result_matrix, 4, 8);
+    FFT_image(padded_image,&module,&phase);
 
-    FFT_image(img,&module,&phase);
-
-    writePPM(module_out, &module, 0.5);
+    writePPM(module_out, &module, find_scale_factor(&module));
 
     printf("Image trnasformed and saved!\n");
 
     free_image(img);
-    free_image(&module);
-    free_image(&phase);
+    free_image(padded_image);
+
+    //TODO FIX THIS FREE METHOD!!!!
+
+   // free_image(&module);
+   // free_image(&phase);
     
     return 0;
 }
