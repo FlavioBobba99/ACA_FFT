@@ -626,25 +626,9 @@ int main(int argc, char *argv[]) {
     Image *padded_image = pad_image(img);
     
     char module_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/module_out_test_1.ppm";
-    //double scale_factor = 0.2;
-    //writePPM(new_image, img, scale_factor);
-
-   // print_image(img);  // For debugging, can be removed if not need65280ed
-
     
-  /*  int  n = 8;
-    double data[] = {1, 2, 3, 4, 5, 6, 7, 8};
-    double complex *result = FFT(data, n);
-
-    for (int i = 0; i < n; i++) {
-        printf("FFT[%d] = %f + %fi\n", i, creal(result[i]), cimag(result[i]));
-    }
-
-    free(result);*/
-
     int rows = 4, cols = 4;
 
-    // Dynamically allocate memory for the matrix
     double complex **matrix = malloc(rows * sizeof(double complex*));
     for (int i = 0; i < rows; i++) {
         matrix[i] = malloc(cols * sizeof(double complex));
