@@ -121,8 +121,12 @@ void writePPM(const char *filename, Image *img, float scale_factor) {
 void free_matrix(double **matrix, int height) {
     for (int i = 0; i < height; i++) {
         free(matrix[i]);
+        matrix[i] = NULL;  // Set to NULL after freeing
     }
+    free(matrix);
+    matrix = NULL;
 }
+
 
 // Function to free a 2D complex matrix
 void free_complex_matrix(double complex **matrix, int height) {
@@ -482,13 +486,6 @@ void FFT_image(Image *in, Image *module, Image *phase){
         fprintf(stderr, "FFT BLUE computation failed\n");
         return;
     }
-    //printf("-------------------------------- RED --------------------------------\n");
-    //print_complex_matrix(complex_red, height, width);
-    //printf("-------------------------------- GREEN --------------------------------\n");
-    //print_complex_matrix(complex_green, height, width);
-    //printf("-------------------------------- BLUE --------------------------------\n");
-    //print_complex_matrix(complex_blue, height, width);
-    
 
 
     // Free allocated memory (example, modify as necessary)
@@ -505,12 +502,12 @@ void FFT_image(Image *in, Image *module, Image *phase){
 
     for(int i = 0; i < height; i++){
         for(int j = 0; j < width; j++){
-            module->red[i][j] =  creal(complex_red[i][j]); 
-            phase->red[i][j] = cimag(complex_red[i][j]);
-            module->green[i][j] = creal(complex_green[i][j]);
-            phase->green[i][j] = cimag(complex_green[i][j]);
-            module->blue[i][j] = creal(complex_blue[i][j]);
-            phase->blue[i][j] =  cimag(complex_blue[i][j]);
+            module->red[i][j] =  cabs(complex_red[i][j]); 
+            phase->red[i][j] = carg(complex_red[i][j]);
+            module->green[i][j] = cabs(complex_green[i][j]);
+            phase->green[i][j] = carg(complex_green[i][j]);
+            module->blue[i][j] = cabs(complex_blue[i][j]);
+            phase->blue[i][j] =  carg(complex_blue[i][j]);
             
         }
     }
@@ -585,9 +582,9 @@ Image* pad_image(const Image* input_image) {
     padded_image->max_color = input_image->max_color;
 
     // Allocate matrices for the color channels using your allocate_matrix function
-    padded_image->red = allocate_matrix(new_height, new_width);
-    padded_image->green = allocate_matrix(new_height, new_width);
-    padded_image->blue = allocate_matrix(new_height, new_width);
+    padded_image->red = allocate_matrix(new_width, new_height);
+    padded_image->green = allocate_matrix(new_width, new_height);
+    padded_image->blue = allocate_matrix(new_width, new_height);
 
     // Initialize the padded matrices with zero and copy the original image data
     for (int i = 0; i < new_height; i++) {
@@ -609,6 +606,39 @@ Image* pad_image(const Image* input_image) {
     return padded_image;
 }
 
+Image* log_scale (Image* img){
+    Image* log_out = (Image *)malloc(sizeof(Image));
+
+    log_out->width = img->width;
+    log_out->height = img->height;
+    log_out->max_color = img->max_color;
+
+    log_out->red = allocate_matrix(img->width, img->height);
+    log_out->green = allocate_matrix(img->width, img->height);
+    log_out->blue = allocate_matrix(img->width, img->height);
+
+    for(int i = 0; i < img->height; i++){
+        for(int j = 0; j < img->width; j++){
+            log_out->red[i][j] = 20*log10(img->red[i][j]);
+        }
+    }
+
+     for(int i = 0; i < img->height; i++){
+        for(int j = 0; j < img->width; j++){
+            log_out->green[i][j] = 20*log10(img->green[i][j]);
+        }
+    }
+
+     for(int i = 0; i < img->height; i++){
+        for(int j = 0; j < img->width; j++){
+            log_out->blue[i][j] = 20*log10(img->blue[i][j]);
+        }
+    }
+    printf("scale convertion done!\n");
+
+    return log_out;
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <image_path>\n", argv[0]);
@@ -626,6 +656,7 @@ int main(int argc, char *argv[]) {
     Image *padded_image = pad_image(img);
     
     char module_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/module_out_test_1.ppm";
+    char phase_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/phase_out_test_1.ppm";
     //double scale_factor = 0.2;
     //writePPM(new_image, img, scale_factor);
 
@@ -663,7 +694,11 @@ int main(int argc, char *argv[]) {
 
     FFT_image(padded_image,module,phase);
 
-    writePPM(module_out, module, find_scale_factor(module));
+    //writePPM(module_out, module, find_scale_factor(module));
+    writePPM(phase_out, phase, find_scale_factor(phase));
+
+    Image* module_log = log_scale(module);
+    writePPM(module_out, module_log, find_scale_factor(module_log));
 
     printf("Image trnasformed and saved!\n");
 
@@ -674,6 +709,7 @@ int main(int argc, char *argv[]) {
 
     printf("Freeing module image\n");
     free_image(module);
+    printf("Freeing phase image\n");
     free_image(phase);
     
     return 0;
