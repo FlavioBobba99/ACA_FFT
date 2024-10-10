@@ -1,7 +1,9 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex.h>
 #include <math.h>
+#include <malloc.h>
 
 #define PI 3.14159265358979323846
 
@@ -639,7 +641,9 @@ Image* log_scale (Image* img){
     return log_out;
 }
 
+
 int main(int argc, char *argv[]) {
+
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <image_path>\n", argv[0]);
         return 1;

@@ -1,7 +1,9 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex.h>
 #include <math.h>
+#include <malloc.h>
 
 #define PI 3.14159265358979323846
 
@@ -353,37 +355,27 @@ void transpose(complex double **matrix, complex double **result, int widht, int 
 
 double complex **matrix_FFT (double complex **matrix, int width, int height) { 
 
-	double complex **temporary_matrix = allocate_complex_matrix(width, height);
     double complex **temporary_transposed_matrix = allocate_complex_matrix(height,width);
-    double complex **out_transposed = allocate_complex_matrix(height,width);
     double complex **out_matrix = allocate_complex_matrix(width,height);
     
 	for (int i = 0; i < height; i++) {
             double complex *out_vect = FFT_complex(matrix[i], width);
             for(int j = 0; j< width; j++){
-                temporary_matrix[i][j] = out_vect[j];
+                temporary_transposed_matrix[j][i] = out_vect[j];
             }
             free(out_vect);
 		}
     printf("----------------- DEBUG ----------------\n");
-    //print_complex_matrix(temporary_matrix,height, width);
-
-    transpose(temporary_matrix, temporary_transposed_matrix, width, height);
-    free_complex_matrix(temporary_matrix, height);
-
-
+    
     for (int i = 0; i < width; i++) {
             double complex *out_vect = FFT_complex(temporary_transposed_matrix[i], height);
             for(int j = 0; j < height; j++){
-                out_transposed[i][j] = out_vect[j];
+                out_matrix[j][i] = out_vect[j];
             }
             free(out_vect);
 		}
 
-    transpose(out_transposed, out_matrix, height, width);
-
     free_complex_matrix(temporary_transposed_matrix, width);
-    free_complex_matrix(out_transposed, width);
 	
 	return out_matrix;
 	}
@@ -639,7 +631,9 @@ Image* log_scale (Image* img){
     return log_out;
 }
 
+
 int main(int argc, char *argv[]) {
+
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <image_path>\n", argv[0]);
         return 1;
