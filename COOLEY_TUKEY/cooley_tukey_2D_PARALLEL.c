@@ -281,6 +281,7 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
     // Allocate memory for the transposed and output matrices
     double complex **temporary_transposed_matrix = allocate_complex_matrix(height, width);
     double complex **out_matrix = allocate_complex_matrix(width, height);
+    
 
     // Arrays for Scatterv and Gatherv
     int *sendcounts = malloc(size * sizeof(int));
@@ -289,7 +290,8 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
     // Calculate sendcounts and displacements for row-wise scatter
     int base_row_count = height / size;  // Base number of rows per process
     int extra_rows = height % size;      // Extra rows for uneven distribution
-
+	
+	
     // Calculate sendcounts (in terms of rows) and displacements (in terms of rows)
     for (int i = 0; i < size; i++) {
         sendcounts[i] = ((i < extra_rows) ? (base_row_count + 1) : base_row_count) * width;  // Number of elements
@@ -299,9 +301,9 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
     // Allocate memory for local rows to be received by each process
 
     int local_row_count = sendcounts[rank]/width; // Number of rows each process will handle
-
+	double complex **local_chunk = allocate_complex_matrix(local_row_count,width); //local chunck to process the FFT
     double complex **local_rows = allocate_complex_matrix(width, local_row_count);
-
+	
     printf("Local row count: %d\n", local_row_count);
 
     //TODO COSA CAZZO 
@@ -315,7 +317,8 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
       //  printf("Performing FFT of vector %d\n", i);
         double complex *out_vect = FFT_complex(local_rows[i], width);  // FFT on each row
         for (int j = 0; j < width; j++) {
-            temporary_transposed_matrix[j][displs[rank]/height + i] = out_vect[j];  // Transpose and store the result
+            //temporary_transposed_matrix[j][displs[rank]/height + i] = out_vect[j];  // Transpose and store the result
+           local_chunk[j][i] = out_vect[j];
         }
         printf("ATTEMPTING FREE\n");
         free(out_vect);  // Free the temporary vector
@@ -325,7 +328,7 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
 
     // Gather the transposed matrix back from all processes
     MPI_Gatherv(&(temporary_transposed_matrix[0][0]), local_row_count * width, MPI_C_DOUBLE_COMPLEX,
-                &(temporary_transposed_matrix[0][0]), sendcounts, displs, MPI_C_DOUBLE_COMPLEX,
+                &(local_chunk[0][0]), sendcounts, displs, MPI_C_DOUBLE_COMPLEX,
                 0, MPI_COMM_WORLD);
 
     if(rank == 0){
@@ -617,8 +620,8 @@ int main(int argc, char *argv[]) {
 
     Image *padded_image = pad_image(img);
     
-    char module_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/module_out_test_1.ppm";
-    char phase_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/phase_out_test_1.ppm";
+    char module_out[] = "/home/fede/Documenti/ACA_FFT/IMAGES/output/module_out_test_1.ppm";
+    char phase_out[] = "/home/fede/Documenti/ACA_FFT/IMAGES/output/phase_out_test_1.ppm";
 
     FFT_image(padded_image,module,phase, rank, size);
 
