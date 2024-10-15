@@ -320,6 +320,8 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
             //temporary_transposed_matrix[j][displs[rank]/height + i] = out_vect[j];  // Transpose and store the result
            local_chunk[j][i] = out_vect[j];
         }
+        printf("chunk print\n");
+        print_complex_matrix(local_chunk, local_row_count,width); 
         printf("ATTEMPTING FREE\n");
         free(out_vect);  // Free the temporary vector
     }
@@ -332,6 +334,7 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
                 0, MPI_COMM_WORLD);
 
     if(rank == 0){
+		printf("transposed print\n");
         print_complex_matrix(temporary_transposed_matrix,width,height);
     }
 
