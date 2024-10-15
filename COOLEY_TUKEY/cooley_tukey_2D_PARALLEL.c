@@ -297,8 +297,14 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
     }
 
     // Allocate memory for local rows to be received by each process
-    int local_row_count = sendcounts[rank]; // Number of rows each process will handle
+
+    int local_row_count = sendcounts[rank]/width; // Number of rows each process will handle
+
     double complex **local_rows = allocate_complex_matrix(width, local_row_count);
+
+    printf("Local row count: %d\n", local_row_count);
+
+    //TODO COSA CAZZO 
 
     // Scatter full rows of the matrix to different processes
     MPI_Scatterv(&(matrix[0][0]), sendcounts, displs, MPI_C_DOUBLE_COMPLEX, &(local_rows[0][0]),
@@ -306,22 +312,25 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
 
     // Perform FFT on the local rows (vectors)
     for (int i = 0; i < local_row_count; i++) {
-        //printf("Performing FFT of vector %d", i);
+      //  printf("Performing FFT of vector %d\n", i);
         double complex *out_vect = FFT_complex(local_rows[i], width);  // FFT on each row
         for (int j = 0; j < width; j++) {
-            temporary_transposed_matrix[j][displs[rank] + i] = out_vect[j];  // Transpose and store the result
+            temporary_transposed_matrix[j][displs[rank]/height + i] = out_vect[j];  // Transpose and store the result
         }
+        printf("ATTEMPTING FREE\n");
         free(out_vect);  // Free the temporary vector
     }
 
-    printf("NOW FINALIZING\n");
+    printf("NOW FINALIZING_1\n");
 
     // Gather the transposed matrix back from all processes
     MPI_Gatherv(&(temporary_transposed_matrix[0][0]), local_row_count * width, MPI_C_DOUBLE_COMPLEX,
                 &(temporary_transposed_matrix[0][0]), sendcounts, displs, MPI_C_DOUBLE_COMPLEX,
                 0, MPI_COMM_WORLD);
 
-    printf("GATHER\n");
+    if(rank == 0){
+        print_complex_matrix(temporary_transposed_matrix,width,height);
+    }
 
     // Recalculate sendcounts and displs for column-wise scatter
     for (int i = 0; i < size; i++) {
@@ -345,7 +354,7 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
         free(out_vect);  // Free the temporary vector
     }
 
-    printf("NOW FINALIZING\n");
+    printf("NOW FINALIZING_2\n");
 
     // Gather the final output matrix back from all processes
     MPI_Gatherv(&(out_matrix[0][0]), local_row_count * height, MPI_C_DOUBLE_COMPLEX,
@@ -356,9 +365,9 @@ double complex **matrix_FFT(double complex **matrix, int width, int height, int 
     // Clean up
     free(sendcounts);
     free(displs);
-    free_complex_matrix(local_rows, local_row_count);
-    free_complex_matrix(local_cols, local_row_count);
-    free_complex_matrix(temporary_transposed_matrix, height);
+   // free_complex_matrix(local_rows, local_row_count);
+  //  free_complex_matrix(local_cols, local_row_count);
+  //  free_complex_matrix(temporary_transposed_matrix, height);
 
     return out_matrix;
 }
