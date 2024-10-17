@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "complex.h": "c"
-    }
+        "complex.h": "c",
+        "complex": "cpp",
+        "images_handling.h": "c",
+        "ffts.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

@@ -4,6 +4,7 @@
 #include <complex.h>
 #include <math.h>
 #include <malloc.h>
+#include <mpi.h>
 
 #define PI 3.14159265358979323846
 
@@ -221,69 +222,6 @@ void print_image(Image *img) {
     }
 }
 
-/*double complex* FFT(double *provavett, int lengthvett) {
-    // Base case: lengthvett == 1
-    if (lengthvett == 1) {
-        double complex *single_out = malloc(sizeof(double complex));
-        if (single_out == NULL) {
-            fprintf(stderr, "Memory allocation failed\n");
-            exit(EXIT_FAILURE);
-        }
-        single_out[0] = provavett[0] + 0.0 * I;
-        return single_out;
-    }
-
-    
-        Malloc must be used in this case because allocating 
-        a variable like a pointer in the normal way, inside a nested
-        call, when the function terminates the variable is deallocated 
-        casing undefined behaviour
-    
-
-    int split_length = lengthvett / 2;
-    double theta = (2 * PI) / lengthvett;
-    double complex w = cos(theta) + I * sin(theta);
-
-    // Allocate memory for even and odd arrays
-    double *even = malloc(split_length * sizeof(double));
-    double *odd = malloc(split_length * sizeof(double));
-    if (even == NULL || odd == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < split_length; i++) {
-        even[i] = provavett[2 * i];
-        odd[i] = provavett[2 * i + 1];
-    }
-
-    // Recursively compute FFT for even and odd parts
-    double complex *y_even = FFT(even, split_length);
-    double complex *y_odd = FFT(odd, split_length);
-
-    // Allocate memory for output
-    double complex *out = malloc(lengthvett * sizeof(double complex));
-    if (out == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < split_length; i++) {
-        out[i] = y_even[i] + cpow(w, i) * y_odd[i];
-        out[i + split_length] = y_even[i] - cpow(w, i) * y_odd[i];
-    }
-
-    // Free allocated memory for even and odd arrays
-    free(even);
-    free(odd);
-    free(y_even);
-    free(y_odd);
-
-    return out;
-}*/
-
-// Unecessary, deactivated
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 double complex* FFT_complex(double complex *provavett, int lengthvett) {
     // Base case: if there's only one element, return it
     if (lengthvett == 1) {
@@ -339,6 +277,36 @@ double complex* FFT_complex(double complex *provavett, int lengthvett) {
     return out;
 }
 
+void print_int_vector(int *vect, int lenght){
+    printf("[");
+    for(int i = 0; i < lenght; i++){
+        printf("%d ",vect[i]);
+    }
+    printf("]\n");
+}
+
+double complex* flatten_matrix(double complex **matrix, int rows, int cols) {
+    double complex *flat_matrix = (double complex*) malloc(rows * cols * sizeof(double complex));
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            flat_matrix[i * cols + j] = matrix[i][j];
+        }
+    }
+    return flat_matrix;
+}
+
+// Unflatten a 1D array into a 2D matrix (after MPI communication)
+void unflatten_matrix(double complex *flat_matrix, double complex **matrix, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            matrix[i][j] = flat_matrix[i * cols + j];
+        }
+    }
+}
+
+
+// Perform FFT on a single row/column (dummy FFT function)
+
 void transpose(complex double **matrix, complex double **result, int widht, int height) {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < widht; j++) {
@@ -347,96 +315,96 @@ void transpose(complex double **matrix, complex double **result, int widht, int 
     }
 }
 
-/*
-    This function calculates the FFT of a complex matrix in input
-    and returns a complex matrix. It uses the previously defined complex 
-    matrix
-*/
 
-double complex **matrix_FFT (double complex **matrix, int width, int height) { 
-
-    double complex **temporary_transposed_matrix = allocate_complex_matrix(height,width);
-    double complex **out_matrix = allocate_complex_matrix(width,height);
+double complex** matrix_FFT(double complex **matrix, int width, int height, int rank, int size) {
+    printf("INPUT_MATRIX\n");
+    // Flatten the matrix for MPI communication
+    double complex *flat_matrix = flatten_matrix(matrix, height, width);
     
-	for (int i = 0; i < height; i++) {
-            double complex *out_vect = FFT_complex(matrix[i], width);
-            for(int j = 0; j< width; j++){
-                temporary_transposed_matrix[j][i] = out_vect[j];
-            }
-            free(out_vect);
-		}
-    printf("----------------- DEBUG ----------------\n");
-    
-    for (int i = 0; i < width; i++) {
-            double complex *out_vect = FFT_complex(temporary_transposed_matrix[i], height);
-            for(int j = 0; j < height; j++){
-                out_matrix[j][i] = out_vect[j];
-            }
-            free(out_vect);
-		}
+    // Allocate arrays for Scatterv and Gatherv
+    int *sendcounts = malloc(size * sizeof(int));
+    int *displs = malloc(size * sizeof(int));
 
-    free_complex_matrix(temporary_transposed_matrix, width);
-	
-	return out_matrix;
-	}
+    // Calculate sendcounts and displacements for row-wise scatter
+    int base_row_count = height / size;
+    int extra_rows = height % size;
 
-/*
-double complex **convert_to_complex_matrix(double **matrix, int rows, int cols) {
-    // Allocate memory for the complex matrix
-    double complex **complexMatrix = (double complex **)malloc(rows * sizeof(double complex *));
-    for (int i = 0; i < rows; i++) {
-        complexMatrix[i] = (double complex *)malloc(cols * sizeof(double complex));
+    for (int i = 0; i < size; i++) {
+        sendcounts[i] = ((i < extra_rows) ? (base_row_count + 1) : base_row_count) * width;
+        displs[i] = (i == 0) ? 0 : displs[i - 1] + sendcounts[i - 1];
     }
 
-    // Convert double matrix to complex matrix (real part is the original value, imaginary part is 0)
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            complexMatrix[i][j] = matrix[i][j] + 0 * I; // Real part is from the input matrix, Imaginary part is 0
+    // Local row count and buffer for scattering
+    int local_row_count = sendcounts[rank] / width;
+    double complex *local_flat_rows = malloc(local_row_count * width * sizeof(double complex));
+    
+    // Scatter rows of the matrix to different processes
+    MPI_Scatterv(flat_matrix, sendcounts, displs, MPI_C_DOUBLE_COMPLEX, local_flat_rows,
+                 local_row_count * width, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
+    // Perform FFT on the local rows (vectors)
+    for (int i = 0; i < local_row_count; i++) {
+        double complex *out_vect = FFT_complex(&local_flat_rows[i * width], width);
+        for (int j = 0; j < width; j++) {
+            local_flat_rows[i * width + j] = out_vect[j];
+        }
+        free(out_vect);
+    }
+
+    // Transpose the result (to simulate column-wise FFT later)
+    double complex *temporary_transposed_flat_matrix = malloc(height * width * sizeof(double complex));
+    for (int i = 0; i < local_row_count; i++) {
+        for (int j = 0; j < width; j++) {
+            temporary_transposed_flat_matrix[j * height + displs[rank] / width + i] = local_flat_rows[i * width + j];
         }
     }
 
-    return complexMatrix;
+    // Gather the transposed matrix back
+    MPI_Gatherv(temporary_transposed_flat_matrix, local_row_count * width, MPI_C_DOUBLE_COMPLEX,
+                flat_matrix, sendcounts, displs, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
+    // Scatter columns (rows of the transposed matrix) for column-wise FFT
+    for (int i = 0; i < size; i++) {
+        sendcounts[i] = ((i < extra_rows) ? (base_row_count + 1) : base_row_count) * height;
+        displs[i] = (i == 0) ? 0 : displs[i - 1] + sendcounts[i - 1];
+    }
+
+    local_row_count = sendcounts[rank] / height;
+    double complex *local_flat_cols = malloc(local_row_count * height * sizeof(double complex));
+
+    MPI_Scatterv(flat_matrix, sendcounts, displs, MPI_C_DOUBLE_COMPLEX,
+                 local_flat_cols, local_row_count * height, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
+    // Perform FFT on the transposed matrix columns
+    double complex *flat_output_matrix = malloc(height * width * sizeof(double complex));
+    for (int i = 0; i < local_row_count; i++) {
+        double complex *out_vect = FFT_complex(&local_flat_cols[i * height], height);
+        for (int j = 0; j < height; j++) {
+            flat_output_matrix[(displs[rank] / height + i) * height + j] = out_vect[j];
+        }
+        free(out_vect);
+    }
+
+    // Gather the final output matrix back from all processes
+    MPI_Gatherv(flat_output_matrix, local_row_count * height, MPI_C_DOUBLE_COMPLEX,
+                flat_output_matrix, sendcounts, displs, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+
+    // Convert the final flat output matrix back to 2D
+    double complex **out_matrix = allocate_complex_matrix(height, width);
+    unflatten_matrix(flat_output_matrix, out_matrix, height, width);
+
+    // Clean up
+    free(flat_matrix);
+    free(local_flat_rows);
+    free(local_flat_cols);
+    free(flat_output_matrix);
+    free(sendcounts);
+    free(displs);
+
+    return out_matrix;
 }
 
-void FFT_image(Image *in, Image *module, Image *phase){
-    
-    int height = in->height;
-    int width = in->width;
-    double complex **temp_red = convert_to_complex_matrix(in->red,height,width);
-    printf("Matrix converted\n");
-    double complex **complex_red = matrix_FFT(temp_red, width, height);
-    print_complex_matrix(complex_red, height, width);
-}*/
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-double complex **convert_to_complex_matrix(double **matrix, int rows, int cols) {
-    // Allocate memory for the complex matrix
-    double complex **complexMatrix = (double complex **)malloc(rows * sizeof(double complex *));
-    if (complexMatrix == NULL) {
-        perror("Failed to allocate memory for complex matrix");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < rows; i++) {
-        complexMatrix[i] = (double complex *)malloc(cols * sizeof(double complex));
-        if (complexMatrix[i] == NULL) {
-            perror("Failed to allocate memory for complex matrix row");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // Convert double matrix to complex matrix (real part is the original value, imaginary part is 0)
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            complexMatrix[i][j] = matrix[i][j] + 0 * I; // Real part is from the input matrix, Imaginary part is 0
-        }
-    }
-
-    return complexMatrix;
-}
-
-void FFT_image(Image *in, Image *module, Image *phase){
+void FFT_image(Image *in, Image *module, Image *phase, int rank, int size){
 
     int height = in->height;
     int width = in->width;
@@ -461,24 +429,23 @@ void FFT_image(Image *in, Image *module, Image *phase){
     printf("Matrices converted :)\n");
 
     // Check if matrix_FFT handles memory properly
-    double complex **complex_red = matrix_FFT(temp_red, width, height);
+    double complex **complex_red = matrix_FFT(temp_red, width, height, rank, size);
     if (complex_red == NULL) {
         fprintf(stderr, "FFT RED computation failed\n");
         return;
     }
-
-    double complex **complex_green = matrix_FFT(temp_green, width, height);
+    
+    double complex **complex_green = matrix_FFT(temp_green, width, height, rank, size);
     if (complex_red == NULL) {
         fprintf(stderr, "FFT GREEN computation failed\n");
         return;
     }
 
-    double complex **complex_blue = matrix_FFT(temp_blue, width, height);
+    double complex **complex_blue = matrix_FFT(temp_blue, width, height, rank, size);
     if (complex_red == NULL) {
         fprintf(stderr, "FFT BLUE computation failed\n");
         return;
     }
-
 
     // Free allocated memory (example, modify as necessary)
     free_complex_matrix(temp_red, height);
@@ -634,6 +601,12 @@ Image* log_scale (Image* img){
 
 int main(int argc, char *argv[]) {
 
+    MPI_Init(NULL, NULL);
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <image_path>\n", argv[0]);
         return 1;
@@ -651,42 +624,8 @@ int main(int argc, char *argv[]) {
     
     char module_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/module_out_test_1.ppm";
     char phase_out[] = "/home/flavio/Desktop/ferretti_MPI/IMAGES/output/phase_out_test_1.ppm";
-    //double scale_factor = 0.2;
-    //writePPM(new_image, img, scale_factor);
 
-   // print_image(img);  // For debugging, can be removed if not need65280ed
-
-    
-  /*  int  n = 8;
-    double data[] = {1, 2, 3, 4, 5, 6, 7, 8};
-    double complex *result = FFT(data, n);
-
-    for (int i = 0; i < n; i++) {
-        printf("FFT[%d] = %f + %fi\n", i, creal(result[i]), cimag(result[i]));
-    }
-
-    free(result);*/
-
-    int rows = 4, cols = 4;
-
-    // Dynamically allocate memory for the matrix
-    double complex **matrix = malloc(rows * sizeof(double complex*));
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = malloc(cols * sizeof(double complex));
-    }
-
-    // Initialize the matrix with some values
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            matrix[i][j] = 1 + 0 * I;
-        }
-    }
-
-    double complex **result_matrix = matrix_FFT(matrix, 4,4);
-    
-    print_complex_matrix(result_matrix, 4, 4);
-
-    FFT_image(padded_image,module,phase);
+    FFT_image(padded_image,module,phase, rank, size);
 
     //writePPM(module_out, module, find_scale_factor(module));
     writePPM(phase_out, phase, find_scale_factor(phase));
@@ -705,6 +644,8 @@ int main(int argc, char *argv[]) {
     free_image(module);
     printf("Freeing phase image\n");
     free_image(phase);
+
+    MPI_Finalize();
     
     return 0;
 }
