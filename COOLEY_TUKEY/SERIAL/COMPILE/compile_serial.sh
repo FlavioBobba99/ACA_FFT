@@ -4,7 +4,7 @@
 OUTPUT_NAME="../serial"
 
 # Source files to compile
-SRC_FILES="../main.c ../SERIAL_PROGRAM_LIBS/matrix_utilities.c ../SERIAL_PROGRAM_LIBS/FFTs.c ../SERIAL_PROGRAM_LIBS/images_handling.c"
+SRC_FILES="../main_serial.c ../SERIAL_PROGRAM_LIBS/matrix_utilities.c ../SERIAL_PROGRAM_LIBS/FFTs.c ../SERIAL_PROGRAM_LIBS/images_handling.c"
 
 # GCC compiler flags
 CFLAGS="-Wall"
