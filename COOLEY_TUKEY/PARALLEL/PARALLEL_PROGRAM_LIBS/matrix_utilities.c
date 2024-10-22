@@ -111,6 +111,14 @@ void print_complex_matrix(double complex **matrix, int rows, int cols) {
     }
 }
 
+void print_complex_vector(double complex *input_vector, int lenght_vector){
+	printf("Complex Vector: \n");
+	for (int i = 0; i < lenght_vector; i++){
+		printf("(%6.2f + %6.2fi)  ", creal(input_vector[i]), cimag(input_vector[i]));
+	}
+	printf("\n");
+}
+
 /*
     Function used to print a double matrix
 

@@ -27,6 +27,22 @@ double *flatten_double_matrix(double **matrix, int heigth, int width){
     return flat_matrix;
 }
 
+double complex *double_to_complex_vector(double *input_vector, int lenght_vector){
+	double complex *output_vector = malloc(lenght_vector * sizeof(double complex));
+	
+	if (output_vector == NULL) {
+        perror("Failed to allocate memory for complex vector");
+        exit(EXIT_FAILURE);
+    }
+    
+    for (int i = 0; i < lenght_vector; i ++){
+		output_vector[i] = input_vector[i] + 0 * I;
+	}
+	print_complex_vector(output_vector, lenght_vector);
+	
+	return output_vector;
+	}
+
 void scatter_and_flatten_double_matrix(double **matrix, int height, int width, int rank, int size, double *local_chunk){
 
     int* elements_per_process = (int*)malloc(size * sizeof(int));
@@ -47,14 +63,15 @@ void scatter_and_flatten_double_matrix(double **matrix, int height, int width, i
         elements_accumulator += elements_per_process[i]; 
     }
 
-    printf("Elements per core vector:\n");
-    print_int_vector(elements_per_process, size);
-
-    printf("Displacements vector:\n");
-    print_int_vector(displacements, size);
-
     
     if (rank == 0){
+		
+		printf("Elements per core vector:\n");
+		print_int_vector(elements_per_process, size);
+
+		printf("Displacements vector:\n");
+		print_int_vector(displacements, size);
+			
         printf("Process %d reached flattening stage\n", rank); 
         flat_matrix = flatten_double_matrix(matrix, height, width);
         printf("Debug flattened matrix:\n");
@@ -68,10 +85,30 @@ void scatter_and_flatten_double_matrix(double **matrix, int height, int width, i
                  local_chunk, elements_per_process[rank], MPI_DOUBLE,
                  0, MPI_COMM_WORLD);
     
-    printf("- - - - - - PROCESS %d - - - - - \n", rank);
+    printf("- - - - - - PROCESS %d - - - - - - - - - - - -\n", rank);
     printf("Elements of process %d has to handle: %d\n", rank, elements_per_process[rank]);
     print_double_vector(local_chunk, elements_per_process[rank]);
-    printf("- - - - - - - - - - - - - - - - - \n");
+    printf("-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  \n");
+    
+    double_to_complex_vector(local_chunk, elements_per_process[rank]);
+    
+    // Allocate space for the full matrix only on the root process
+	double complex **gathered_matrix = NULL;
+	
+	if (rank == 0){
+		gathered_matrix = allocate_complex_matrix(width, height);
+		printf("gathered matrix allocated \n");
+	}
+	
+	// Gather the data from all processes to process 0
+	MPI_Gatherv(local_chunk, elements_per_process[rank], MPI_C_DOUBLE_COMPLEX,
+            gathered_matrix, elements_per_process, displacements, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	
+	if (rank == 0){
+		printf("Gathered Matrix\n");
+		print_complex_matrix(gathered_matrix, height, width);
+	}
+		
 }
 
 int main(int argc, char *argv[]) {
@@ -111,8 +148,14 @@ int main(int argc, char *argv[]) {
 
     double *local_chunk = NULL;
     scatter_and_flatten_double_matrix(test_matrix, TEST_MATRIX_HEIGTH, TEST_MATRIX_WIDTH, rank, size, local_chunk);
+    
 
     MPI_Finalize();
 
     return 0;
+    
+    //fede
+    //mpirun -n 3 ../parallel /home/fede/Documenti/ACA_FFT/IMAGES/blue16x16.ppm /home/fede/Documenti/ACA_FFT/IMAGES/output/out1.ppm /home/fede/Documenti/ACA_FFT/IMAGES/output/out2.ppm
+
 }
+
