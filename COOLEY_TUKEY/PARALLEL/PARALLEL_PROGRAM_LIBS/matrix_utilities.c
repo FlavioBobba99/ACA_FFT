@@ -112,6 +112,23 @@ void print_complex_matrix(double complex **matrix, int rows, int cols) {
 }
 
 /*
+    Function used to print a double matrix
+
+    It takes as an input the matrix pointer and the number
+    of rows and columns.
+*/
+
+void print_double_matrix(double **matrix, int rows, int cols) {
+    printf("Double Matrix:\n");
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            printf("%f ",matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+/*
     Function used to print a vector of integers
 
     it takes as an input the vector pointer and the number
@@ -129,3 +146,14 @@ void print_int_vector(int *vect, int lenght){
     }
     printf("%d]\n",vect[i]);
 }
+
+void print_double_vector(double *vect, int lenght){
+    printf("[");
+    int i;
+    for(i = 0; i < lenght-1; i++){
+        printf("%f ",vect[i]);
+    }
+    printf("%f]\n",vect[i]);
+}
+
+

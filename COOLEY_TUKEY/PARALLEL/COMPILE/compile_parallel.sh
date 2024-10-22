@@ -4,7 +4,7 @@
 OUTPUT_NAME="../parallel"
 
 # Source files to compile
-SRC_FILES="../main_parallel.c ../SERIAL_PROGRAM_LIBS/matrix_utilities.c ../SERIAL_PROGRAM_LIBS/FFTs.c ../SERIAL_PROGRAM_LIBS/images_handling.c"
+SRC_FILES="../main_parallel.c ../PARALLEL_PROGRAM_LIBS/matrix_utilities.c ../PARALLEL_PROGRAM_LIBS/FFTs.c ../PARALLEL_PROGRAM_LIBS/images_handling.c"
 
 # GCC compiler flags
 CFLAGS="-Wall"

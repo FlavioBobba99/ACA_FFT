@@ -189,6 +189,3 @@ void FFT_image(Image *in, Image *module, Image *phase){
     }
 
 }
-
-
-// I DON?T KNOW IT IS BORING RN

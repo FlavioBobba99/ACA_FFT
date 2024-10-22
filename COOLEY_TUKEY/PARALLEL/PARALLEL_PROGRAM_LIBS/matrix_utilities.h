@@ -21,4 +21,8 @@ extern void print_complex_matrix(double complex **matrix, int rows, int cols);
 
 extern void print_int_vector(int *vect, int length);
 
+extern void print_double_vector(double *vect, int lenght);
+
+extern void print_double_matrix(double **matrix, int rows, int cols);
+
 #endif

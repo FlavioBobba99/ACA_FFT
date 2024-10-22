@@ -3,7 +3,8 @@
         "complex.h": "c",
         "complex": "cpp",
         "images_handling.h": "c",
-        "ffts.h": "c"
+        "ffts.h": "c",
+        "type_traits": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
