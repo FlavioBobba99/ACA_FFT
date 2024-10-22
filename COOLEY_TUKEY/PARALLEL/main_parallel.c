@@ -90,23 +90,23 @@ void scatter_and_flatten_double_matrix(double **matrix, int height, int width, i
     print_double_vector(local_chunk, elements_per_process[rank]);
     printf("-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  \n");
     
-    double_to_complex_vector(local_chunk, elements_per_process[rank]);
+    double complex *local_complex_chunk = double_to_complex_vector(local_chunk, elements_per_process[rank]);
     
     // Allocate space for the full matrix only on the root process
-	double complex **gathered_matrix = NULL;
+	double complex *gathered_vector = NULL;
 	
 	if (rank == 0){
-		gathered_matrix = allocate_complex_matrix(width, height);
-		printf("gathered matrix allocated \n");
+		gathered_vector = malloc( width * height * sizeof(double complex)); 
+		printf("gathered vector allocated \n");
 	}
 	
 	// Gather the data from all processes to process 0
-	MPI_Gatherv(local_chunk, elements_per_process[rank], MPI_C_DOUBLE_COMPLEX,
-            gathered_matrix, elements_per_process, displacements, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
+	MPI_Gatherv(local_complex_chunk, elements_per_process[rank], MPI_C_DOUBLE_COMPLEX,
+            gathered_vector, elements_per_process, displacements, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 	
 	if (rank == 0){
-		printf("Gathered Matrix\n");
-		print_complex_matrix(gathered_matrix, height, width);
+		printf("Gathered Vector\n");
+		print_complex_vector(gathered_vector, height * width);
 	}
 		
 }
