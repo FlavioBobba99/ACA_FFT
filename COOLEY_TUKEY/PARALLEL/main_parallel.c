@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 #define TEST_MATRIX_HEIGTH 4
-#define TEST_MATRIX_WIDTH 3
+#define TEST_MATRIX_WIDTH 4
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex.h>
@@ -32,8 +32,8 @@ void scatter_and_flatten_double_matrix(double **matrix, int height, int width, i
     int* elements_per_process = (int*)malloc(size * sizeof(int));
     int* displacements = (int*)malloc(size * sizeof(int));
 
-    int baseline_elements = height/size*width;
-    int remaining_elements = height%size*width;
+    int baseline_elements = height*width/size;
+    int remaining_elements = height*width%size;
 
     int elements_accumulator = 0;
 
