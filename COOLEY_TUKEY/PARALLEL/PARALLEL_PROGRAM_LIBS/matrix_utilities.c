@@ -164,4 +164,41 @@ void print_double_vector(double *vect, int lenght){
     printf("%f]\n",vect[i]);
 }
 
+double complex **unflatten_complex_matrix(double complex *in, int width, int height){
+    double complex **result = allocate_complex_matrix(width,height);
+    int acc = 0;
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+            result[i][j] = in[acc];
+            acc++;
+        }
+    }
+    return result;
+}
 
+double complex **transpose_complex_matrix(double complex **in, int width, int height){
+
+    double complex **result = allocate_complex_matrix(height, width);
+
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+            result[j][i] = in[i][j];
+        }
+    }
+    return result;
+}
+
+double complex *flatten_complex_matrix(double complex **matrix, int width, int heigth){
+
+    int v_index = 0;
+
+    double complex *flat_matrix = malloc(heigth*width*sizeof(double complex));
+
+    for(int i = 0; i < heigth; i++){
+        for(int j = 0; j < width; j++){
+           flat_matrix[v_index] = matrix[i][j];
+           v_index++;
+        }
+    }
+    return flat_matrix;
+}

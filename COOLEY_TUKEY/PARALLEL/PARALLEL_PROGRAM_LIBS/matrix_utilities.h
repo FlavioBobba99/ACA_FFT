@@ -27,4 +27,10 @@ extern void print_double_vector(double *vect, int lenght);
 
 extern void print_double_matrix(double **matrix, int rows, int cols);
 
+extern double complex **unflatten_complex_matrix(double complex *in, int width, int height);
+
+extern double complex **transpose_complex_matrix(double complex **in, int width, int height);
+
+extern double complex *flatten_complex_matrix(double complex **matrix, int width, int height);
+
 #endif

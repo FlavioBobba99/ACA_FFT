@@ -77,6 +77,69 @@ double complex* FFT_complex(double complex *provavett, int lengthvett) {
     return out;
 }
 
+void FFT_complex_with_range(double complex *provavett, int starting_index, double complex *output_vector, int lengthvett) {
+    // Base case: if there's only one element, return it
+    if (lengthvett == 1) {
+        printf("ERROR HOW DID YOU END UP HERE??? lenghtvect %d\n", lengthvett);
+        double complex *single_out = malloc(sizeof(double complex));
+        if (single_out == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+        single_out[0] = provavett[0];
+        //return single_out;
+    }
+
+    printf("lengthvett %d\n", lengthvett);
+
+    int split_length = lengthvett / 2;
+
+    // Allocate memory for even and odd arrays
+    double complex *even = malloc(split_length * sizeof(double complex));
+    double complex *odd = malloc(split_length * sizeof(double complex));
+    if (even == NULL || odd == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Population of even and odd reached\n");
+
+    // Separate the input into even and odd indexed elements
+    for (int i = 0; i < split_length; i++) {
+        printf("EVEN INDEX: %d\n", 2 * i + starting_index);
+        printf("ODD INDEX: %d\n",2 * i + 1 + starting_index);
+        even[i] = provavett[2 * i + starting_index];
+        odd[i] = provavett[2 * i + 1 + starting_index];
+    }
+
+    print_complex_vector(even, split_length);
+    print_complex_vector(odd, split_length);
+
+    // Recursively compute FFT for even and odd parts
+    double complex *y_even = FFT_complex(even, split_length);
+    double complex *y_odd = FFT_complex(odd, split_length);
+
+    print_complex_vector(y_even, split_length);
+    print_complex_vector(y_odd, split_length);
+
+    printf("FFT even and odd done\n");
+
+    // Compute the FFT combining step
+    for (int i = 0; i < split_length; i++) {
+        double complex twiddle_factor = cexp(-2.0 * I * PI * i / lengthvett); // e^(-2*pi*i*k/N)
+        output_vector[i + starting_index] = y_even[i] + twiddle_factor * y_odd[i];
+        output_vector[i + split_length + starting_index] = y_even[i] - twiddle_factor * y_odd[i];
+    }
+
+    printf("Combination done\n");
+
+    // Free allocated memory for even and odd arrays
+    free(even);
+    free(odd);
+    free(y_even);
+    free(y_odd);
+}
+
 void transpose(complex double **matrix, complex double **result, int widht, int height) {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < widht; j++) {
