@@ -33,4 +33,8 @@ extern double complex **transpose_complex_matrix(double complex **in, int width,
 
 extern double complex *flatten_complex_matrix(double complex **matrix, int width, int height);
 
+extern double *flatten_double_matrix(double **matrix, int heigth, int width);
+
+extern double complex *double_to_complex_vector(double *input_vector, int lenght_vector);
+
 #endif

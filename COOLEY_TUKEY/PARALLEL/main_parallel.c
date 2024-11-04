@@ -12,21 +12,6 @@
 #include "./PARALLEL_PROGRAM_LIBS/matrix_utilities.h"
 #include "./PARALLEL_PROGRAM_LIBS/FFTs.h"
 
-double *flatten_double_matrix(double **matrix, int heigth, int width){
-
-    int v_index = 0;
-
-    double *flat_matrix = malloc(heigth*width*sizeof(double));
-
-    for(int i = 0; i < heigth; i++){
-        for(int j = 0; j < width; j++){
-           flat_matrix[v_index] = matrix[i][j];
-           v_index++;
-        }
-    }
-    return flat_matrix;
-}
-
 void FFT_pt2(double complex **matrix, int height, int width, int rank, int size){
 
     int* elements_per_process = (int*)malloc(size * sizeof(int));
@@ -108,22 +93,6 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size)
         
 	}
 }
-
-double complex *double_to_complex_vector(double *input_vector, int lenght_vector){
-	double complex *output_vector = malloc(lenght_vector * sizeof(double complex));
-	
-	if (output_vector == NULL) {
-        perror("Failed to allocate memory for complex vector");
-        exit(EXIT_FAILURE);
-    }
-    
-    for (int i = 0; i < lenght_vector; i ++){
-		output_vector[i] = input_vector[i] + 0 * I;
-	}
-	print_complex_vector(output_vector, lenght_vector);
-	
-	return output_vector;
-	}
 
 void scatter_and_flatten_double_matrix(double **matrix, int height, int width, int rank, int size, double *local_chunk){
 
