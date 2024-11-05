@@ -264,6 +264,8 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
         double global_max_RGB = find_max_in_double_vector(max_RGB, 3);
         *global_max = global_max_RGB;
         printf("The global RGB max is %f\n", global_max_RGB);
+        
+        module = (Image *)malloc(sizeof(Image));
 
         module->width = in->width;
         module->height = in->height;
@@ -348,12 +350,12 @@ int main(int argc, char *argv[]) {
     double max_RGB = 0;
 
     PARALLEL_image_FFT(img, module, phase, rank, size, &max_RGB);
-    printf("%f\n",max_RGB);
+    printf("the max_RGB: %f\n",max_RGB);
 
     if(rank == 0){
         double scale = (255 / max_RGB);
         printf("SCALE FACTOR = %f\n", scale);
-        writePPM(argv[2],module, scale);
+		writePPM(argv[2],module, scale);
     }
 
     MPI_Finalize();
