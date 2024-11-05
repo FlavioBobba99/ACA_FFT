@@ -50,6 +50,7 @@ Image *read_ppm(const char *filename) {
     }
 
     fclose(file);
+    printf("File read successful\n");
     return img;
 }
 

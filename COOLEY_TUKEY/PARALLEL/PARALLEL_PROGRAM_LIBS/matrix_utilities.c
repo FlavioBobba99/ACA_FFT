@@ -235,3 +235,16 @@ double complex *double_to_complex_vector(double *input_vector, int lenght_vector
 	
 	return output_vector;
 }
+
+
+double **unflatten_double_matrix(double *in, int width, int height){
+    double **result = allocate_matrix(width,height);
+    int acc = 0;
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+            result[i][j] = in[acc];
+            acc++;
+        }
+    }
+    return result;
+}
