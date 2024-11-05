@@ -33,10 +33,14 @@ extern double **unflatten_double_matrix(double *in, int width, int height);
 
 extern double complex **transpose_complex_matrix(double complex **in, int width, int height);
 
+extern double **transpose_double_matrix(double **in, int width, int height);
+
 extern double complex *flatten_complex_matrix(double complex **matrix, int width, int height);
 
 extern double *flatten_double_matrix(double **matrix, int heigth, int width);
 
 extern double complex *double_to_complex_vector(double *input_vector, int lenght_vector);
+
+extern double find_max_in_double_vector(double *in, int lenght);
 
 #endif

@@ -80,7 +80,7 @@ double complex* FFT_complex(double complex *provavett, int lengthvett) {
 void FFT_complex_with_range(double complex *provavett, int starting_index, double complex *output_vector, int lengthvett) {
     // Base case: if there's only one element, return it
     if (lengthvett == 1) {
-        printf("ERROR HOW DID YOU END UP HERE??? lenghtvect %d\n", lengthvett);
+        //printf("ERROR HOW DID YOU END UP HERE??? lenghtvect %d\n", lengthvett);
         double complex *single_out = malloc(sizeof(double complex));
         if (single_out == NULL) {
             fprintf(stderr, "Memory allocation failed\n");
@@ -90,7 +90,7 @@ void FFT_complex_with_range(double complex *provavett, int starting_index, doubl
         //return single_out;
     }
 
-    printf("lengthvett %d\n", lengthvett);
+    //printf("lengthvett %d\n", lengthvett);
 
     int split_length = lengthvett / 2;
 
@@ -102,27 +102,27 @@ void FFT_complex_with_range(double complex *provavett, int starting_index, doubl
         exit(EXIT_FAILURE);
     }
 
-    printf("Population of even and odd reached\n");
+    //printf("Population of even and odd reached\n");
 
     // Separate the input into even and odd indexed elements
     for (int i = 0; i < split_length; i++) {
-        printf("EVEN INDEX: %d\n", 2 * i + starting_index);
-        printf("ODD INDEX: %d\n",2 * i + 1 + starting_index);
+        //printf("EVEN INDEX: %d\n", 2 * i + starting_index);
+        //printf("ODD INDEX: %d\n",2 * i + 1 + starting_index);
         even[i] = provavett[2 * i + starting_index];
         odd[i] = provavett[2 * i + 1 + starting_index];
     }
 
-    print_complex_vector(even, split_length);
-    print_complex_vector(odd, split_length);
+    //print_complex_vector(even, split_length);
+    //print_complex_vector(odd, split_length);
 
     // Recursively compute FFT for even and odd parts
     double complex *y_even = FFT_complex(even, split_length);
     double complex *y_odd = FFT_complex(odd, split_length);
 
-    print_complex_vector(y_even, split_length);
-    print_complex_vector(y_odd, split_length);
+    //print_complex_vector(y_even, split_length);
+    //print_complex_vector(y_odd, split_length);
 
-    printf("FFT even and odd done\n");
+    //printf("FFT even and odd done\n");
 
     // Compute the FFT combining step
     for (int i = 0; i < split_length; i++) {
@@ -131,7 +131,7 @@ void FFT_complex_with_range(double complex *provavett, int starting_index, doubl
         output_vector[i + split_length + starting_index] = y_even[i] - twiddle_factor * y_odd[i];
     }
 
-    printf("Combination done\n");
+    //printf("Combination done\n");
 
     // Free allocated memory for even and odd arrays
     free(even);

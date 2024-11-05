@@ -231,7 +231,7 @@ double complex *double_to_complex_vector(double *input_vector, int lenght_vector
 		output_vector[i] = input_vector[i] + 0 * I;
 	}
 
-	print_complex_vector(output_vector, lenght_vector);
+	//print_complex_vector(output_vector, lenght_vector);
 	
 	return output_vector;
 }
@@ -247,4 +247,27 @@ double **unflatten_double_matrix(double *in, int width, int height){
         }
     }
     return result;
+}
+
+double **transpose_double_matrix(double **in, int width, int height){
+    double **result = allocate_matrix(height, width);
+
+    for(int i = 0; i < height; i++){
+        for(int j = 0; j < width; j++){
+            result[j][i] = in[i][j];
+        }
+    }
+    return result;
+}
+
+double find_max_in_double_vector(double *in, int lenght){
+
+    double max = 0;
+
+    for(int i = 0; i < lenght; i++){
+        if(in[i]>max){
+            max = in[i];
+        }
+    }
+    return max;
 }
