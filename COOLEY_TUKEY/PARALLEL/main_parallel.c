@@ -242,7 +242,7 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
 }
 
-void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int size){
+void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int size, double *global_max){
 
     double **module_red = NULL;
     double **phase_red = NULL;
@@ -259,11 +259,20 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
     PARALLEL_FFT_matrix(in->green, in->height,in->width, rank, size, module_green, phase_green, &max_RGB[1]);
     PARALLEL_FFT_matrix(in->blue, in->height,in->width, rank, size, module_blue, phase_blue, &max_RGB[2]);
 
-
     if(rank == 0){
         print_double_vector(max_RGB, 3);
         double global_max_RGB = find_max_in_double_vector(max_RGB, 3);
+        *global_max = global_max_RGB;
         printf("The global RGB max is %f\n", global_max_RGB);
+
+        module->width = in->width;
+        module->height = in->height;
+
+        module->red = module_red;
+        module->green = module_green;
+        module->blue = module_blue;
+
+        module->max_color = 255;
     }
     
 }
@@ -313,7 +322,7 @@ int main(int argc, char *argv[]) {
         print_double_matrix(test_matrix, TEST_MATRIX_HEIGTH, TEST_MATRIX_WIDTH);
     }
 
-    double *local_chunk = NULL;
+    //double *local_chunk = NULL;
     double **matrix_module_output = NULL;
     double **matrix_phase_output = NULL;
 
@@ -336,7 +345,16 @@ int main(int argc, char *argv[]) {
 
     double *local_maximums_vect = NULL;
 
-    PARALLEL_image_FFT(img, module, phase, rank, size);
+    double max_RGB = 0;
+
+    PARALLEL_image_FFT(img, module, phase, rank, size, &max_RGB);
+    printf("%f\n",max_RGB);
+
+    if(rank == 0){
+        double scale = (255 / max_RGB);
+        printf("SCALE FACTOR = %f\n", scale);
+        writePPM(argv[2],module, scale);
+    }
 
     MPI_Finalize();
 
