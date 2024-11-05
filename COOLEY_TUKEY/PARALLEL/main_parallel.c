@@ -150,7 +150,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
         module_matrix = transpose_double_matrix(module_matrix, width, height);
         phase_matrix = transpose_double_matrix(phase_matrix, width, height);
 
-
+        print_double_matrix(module_matrix, height, width);
 	}
 }
 
@@ -264,6 +264,9 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
         double global_max_RGB = find_max_in_double_vector(max_RGB, 3);
         *global_max = global_max_RGB;
         printf("The global RGB max is %f\n", global_max_RGB);
+
+        printf("TEST PRINT RED\n");
+        print_double_matrix(module_red, 4, 4);
         
         module = (Image *)malloc(sizeof(Image));
 
@@ -275,6 +278,8 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
         module->blue = module_blue;
 
         module->max_color = 255;
+        printf("MODULE POPULATION DONE\n");
+        print_double_matrix(module->red, 4, 4);
     }
     
 }
@@ -345,8 +350,6 @@ int main(int argc, char *argv[]) {
 
     printf("I am process %d and i have recieved width, height = %d, %d\n", rank, img->width, img->height);
 
-    double *local_maximums_vect = NULL;
-
     double max_RGB = 0;
 
     PARALLEL_image_FFT(img, module, phase, rank, size, &max_RGB);
@@ -355,7 +358,7 @@ int main(int argc, char *argv[]) {
     if(rank == 0){
         double scale = (255 / max_RGB);
         printf("SCALE FACTOR = %f\n", scale);
-		writePPM(argv[2],module, scale);
+		writePPM(argv[2], module, scale);
     }
 
     MPI_Finalize();
