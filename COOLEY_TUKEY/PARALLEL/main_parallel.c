@@ -266,6 +266,9 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
         printf("The global RGB max is %f\n", global_max_RGB);
 
         printf("TEST PRINT RED\n");
+        if(module_red == NULL){
+            printf("DIO PORCO\n");
+        }
         print_double_matrix(module_red, 4, 4);
         
         module = (Image *)malloc(sizeof(Image));
