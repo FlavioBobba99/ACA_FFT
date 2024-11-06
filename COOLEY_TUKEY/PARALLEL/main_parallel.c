@@ -105,7 +105,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
     
 
     double local_max_module = find_max_in_double_vector_and_logscale(local_module, elements_per_process[rank]);
-    printf("Local max from process %d = %f\n", rank, local_max_module);
+    //printf("Local max from process %d = %f\n", rank, local_max_module);
 
     MPI_Gatherv(local_module, elements_per_process[rank], MPI_DOUBLE,
             gathered_module, elements_per_process, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -139,7 +139,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 
 
         *color_max = find_max_in_double_vector(gathered_max_values, size);
-        printf("Current color_max is %f\n", *color_max);
+       // printf("Current color_max is %f\n", *color_max);
         //FFT_pt1 = unflatten_complex_matrix(gathered_vector, width, height);
        // printf("FINAL RESULT\n");
        // printf("UNFLATTENED MATRIX\n");
@@ -255,58 +255,82 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
 
 void PARALLEL_image_FFT(Image *in, Image **module, Image **phase, int rank, int size, double *global_max){
 
-    double **module_red = NULL;
-    double **phase_red = NULL;
-    double **module_green = NULL;
-    double **phase_green = NULL;
-    double **module_blue = NULL;
-    double **phase_blue = NULL;
-
+    double **module_channel = NULL;
+    double **phase_channel = NULL;
     double max_RGB[3] = {0};
 
-    printf("PARALLEL_IMAGE_FFT_REACHED\n");
-    //printf("Test heigth, width = %d, %d", in->height, in->width);
-    PARALLEL_FFT_matrix(in->red, in->height,in->width, rank, size, &module_red, &phase_red, &max_RGB[0]);
-    PARALLEL_FFT_matrix(in->green, in->height,in->width, rank, size, &module_green, &phase_green, &max_RGB[1]);
-    PARALLEL_FFT_matrix(in->blue, in->height,in->width, rank, size, &module_blue, &phase_blue, &max_RGB[2]);
+    if(rank == 0){
+        printf("PARALLEL FFT REACHED\n");
+    }
 
     if(rank == 0){
-        print_double_vector(max_RGB, 3);
-        double global_max_RGB = find_max_in_double_vector(max_RGB, 3);
-        *global_max = global_max_RGB;
-        printf("The global RGB max is %f\n", global_max_RGB);
-
-        //printf("TEST PRINT RED\n");
-        if(module_red == NULL){
-            printf("ERROR IN ASSIGNING STRUCTURE\n");
-        }
-       // print_double_matrix(module_red, 4, 4);
-        
+        // Initialize the output module and phase images if rank is 0
         *module = (Image *)malloc(sizeof(Image));
-
         (*module)->width = in->width;
         (*module)->height = in->height;
-
-        (*module)->red = module_red;
-        (*module)->green = module_green;
-        (*module)->blue = module_blue;
-
         (*module)->max_color = 255;
+        (*module)->red = NULL;   // Allocate only when needed
+        (*module)->green = NULL;
+        (*module)->blue = NULL;
 
         *phase = (Image *)malloc(sizeof(Image));
-
         (*phase)->width = in->width;
         (*phase)->height = in->height;
-
-        (*phase)->red = phase_red;
-        (*phase)->green = phase_green;
-        (*phase)->blue = phase_blue;
-
         (*phase)->max_color = 255;
-
+        (*phase)->red = NULL;    // Allocate only when needed
+        (*phase)->green = NULL;
+        (*phase)->blue = NULL;
     }
-    
+
+    // Process RED channel
+    PARALLEL_FFT_matrix(in->red, in->height, in->width, rank, size, &module_channel, &phase_channel, &max_RGB[0]);
+    if(rank == 0) {
+        (*module)->red = module_channel;
+        (*phase)->red = phase_channel;
+    }
+
+    if(rank == 0){
+        printf("RED CHANNEL DONE\n");
+    }
+    // Free module_channel and phase_channel after processing the red channel, to conserve memory
+    module_channel = NULL;
+    phase_channel = NULL;
+
+    // Process GREEN channel
+    PARALLEL_FFT_matrix(in->green, in->height, in->width, rank, size, &module_channel, &phase_channel, &max_RGB[1]);
+    if(rank == 0) {
+        (*module)->green = module_channel;
+        (*phase)->green = phase_channel;
+    }
+
+    if(rank == 0){
+        printf("GREEN CHANNEL DONE\n");
+    }
+    // Free module_channel and phase_channel after processing the green channel
+    module_channel = NULL;
+    phase_channel = NULL;
+
+    // Process BLUE channel
+    PARALLEL_FFT_matrix(in->blue, in->height, in->width, rank, size, &module_channel, &phase_channel, &max_RGB[2]);
+    if(rank == 0) {
+        (*module)->blue = module_channel;
+        (*phase)->blue = phase_channel;
+    }
+
+    if(rank == 0){
+        printf("BLUE CHANNEL DONE\n");
+    }
+    // No need to free here since we’re at the last color channel
+
+    // Calculate global max RGB value
+    if(rank == 0) {
+        //print_double_vector(max_RGB, 3);
+        double global_max_RGB = find_max_in_double_vector(max_RGB, 3);
+        *global_max = global_max_RGB;
+       // printf("The global RGB max is %f\n", global_max_RGB);
+    }
 }
+
 
 int main(int argc, char *argv[]) {
 
@@ -335,23 +359,6 @@ int main(int argc, char *argv[]) {
         img_width = img->width;
         img_height = img->height;
     }
-    
-    
-    double **test_matrix = allocate_matrix(TEST_MATRIX_WIDTH,TEST_MATRIX_HEIGTH);
-
-    int acc = 0;
-
-    for(int i  = 0; i < TEST_MATRIX_HEIGTH; i++){
-        for(int j = 0; j < TEST_MATRIX_WIDTH; j++){
-            test_matrix[i][j] = 255;
-            acc++;
-        }
-    }
-
-    if(rank == 0){
-        printf("Original double matrix:\n");
-        print_double_matrix(test_matrix, TEST_MATRIX_HEIGTH, TEST_MATRIX_WIDTH);
-    }
 
     //double *local_chunk = NULL;
     double **matrix_module_output = NULL;
@@ -372,25 +379,27 @@ int main(int argc, char *argv[]) {
         img->height = img_height;
     }
 
-    printf("I am process %d and i have recieved width, height = %d, %d\n", rank, img->width, img->height);
+    //printf("I am process %d and i have recieved width, height = %d, %d\n", rank, img->width, img->height);
 
     double max_RGB = 0;
 
     PARALLEL_image_FFT(img, &module, &phase, rank, size, &max_RGB);
-    printf("the max_RGB: %f\n",max_RGB);
+   // printf("the max_RGB: %f\n",max_RGB);
 
     if(rank == 0){
+        printf("SAVING IMAGE\n");
         double scale = (255 / max_RGB);
-        printf("SCALE FACTOR = %f\n", scale);
+      //  printf("SCALE FACTOR = %f\n", scale);
 		writePPM(argv[2], module, scale);
 
         scale = (255 / 2*M_PI);
-        printf("SCALE FACTOR = %f\n", scale);
+        //printf("SCALE FACTOR = %f\n", scale);
 		writePPM(argv[3], phase, scale);
     }
 
     MPI_Finalize();
 
+    printf("RUN SUCCESSFUL\n");
     return 0;
     
     //fede
