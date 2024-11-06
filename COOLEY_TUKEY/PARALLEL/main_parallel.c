@@ -14,7 +14,7 @@
 
 // ATTENZIONE LA FUNIONE ACCETTA HEIGHT WIDTH PER MANTENERE L'ORDINE USATO NELLE CHIAMATE A FUNZIONE
 
-void FFT_pt2(double complex **matrix, int height, int width, int rank, int size, double ***module_matrix, double **phase_matrix, double *color_max){
+void FFT_pt2(double complex **matrix, int height, int width, int rank, int size, double ***module_matrix, double ***phase_matrix, double *color_max){
 
     int* elements_per_process = (int*)malloc(size * sizeof(int));
     int* displacements = (int*)malloc(size * sizeof(int));
@@ -103,7 +103,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 	// Gather the data from all processes to process 0
     
 
-    double local_max_module = find_max_in_double_vector(local_module, elements_per_process[rank]);
+    double local_max_module = find_max_in_double_vector_and_logscale(local_module, elements_per_process[rank]);
     printf("Local max from process %d = %f\n", rank, local_max_module);
 
     MPI_Gatherv(local_module, elements_per_process[rank], MPI_DOUBLE,
@@ -130,7 +130,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
     //    print_double_vector(gathered_phase, width * height);
 
         *module_matrix = unflatten_double_matrix(gathered_module, width, height);
-        phase_matrix = unflatten_double_matrix(gathered_phase, width, height);
+        *phase_matrix = unflatten_double_matrix(gathered_phase, width, height);
 
         //print_double_matrix(module_matrix, height, width);
         //print_double_matrix(phase_matrix, height, width);
@@ -148,13 +148,15 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
         //print_complex_matrix(FFT_pt1_transposed, width, height);
 
         *module_matrix = transpose_double_matrix(*module_matrix, width, height);
-        phase_matrix = transpose_double_matrix(phase_matrix, width, height);
+        *phase_matrix = transpose_double_matrix(*phase_matrix, width, height);
 
         //print_double_matrix(*module_matrix, height, width);
+        free(gathered_module);
+        free(gathered_phase);
 	}
 }
 
-void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int size, double ***matrix_module_out, double **matrix_phase_out,double *color_max){
+void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int size, double ***matrix_module_out, double ***matrix_phase_out,double *color_max){
 
     int* elements_per_process = (int*)malloc(size * sizeof(int));
     int* displacements = (int*)malloc(size * sizeof(int));
@@ -242,7 +244,7 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
 }
 
-void PARALLEL_image_FFT(Image *in, Image **module, Image *phase, int rank, int size, double *global_max){
+void PARALLEL_image_FFT(Image *in, Image **module, Image **phase, int rank, int size, double *global_max){
 
     double **module_red = NULL;
     double **phase_red = NULL;
@@ -255,9 +257,9 @@ void PARALLEL_image_FFT(Image *in, Image **module, Image *phase, int rank, int s
 
     printf("PARALLEL_IMAGE_FFT_REACHED\n");
     //printf("Test heigth, width = %d, %d", in->height, in->width);
-    PARALLEL_FFT_matrix(in->red, in->height,in->width, rank, size, &module_red, phase_red, &max_RGB[0]);
-    PARALLEL_FFT_matrix(in->green, in->height,in->width, rank, size, &module_green, phase_green, &max_RGB[1]);
-    PARALLEL_FFT_matrix(in->blue, in->height,in->width, rank, size, &module_blue, phase_blue, &max_RGB[2]);
+    PARALLEL_FFT_matrix(in->red, in->height,in->width, rank, size, &module_red, &phase_red, &max_RGB[0]);
+    PARALLEL_FFT_matrix(in->green, in->height,in->width, rank, size, &module_green, &phase_green, &max_RGB[1]);
+    PARALLEL_FFT_matrix(in->blue, in->height,in->width, rank, size, &module_blue, &phase_blue, &max_RGB[2]);
 
     if(rank == 0){
         print_double_vector(max_RGB, 3);
@@ -265,11 +267,11 @@ void PARALLEL_image_FFT(Image *in, Image **module, Image *phase, int rank, int s
         *global_max = global_max_RGB;
         printf("The global RGB max is %f\n", global_max_RGB);
 
-        printf("TEST PRINT RED\n");
+        //printf("TEST PRINT RED\n");
         if(module_red == NULL){
-            printf("DIO PORCO\n");
+            printf("ERROR IN ASSIGNING STRUCTURE\n");
         }
-        print_double_matrix(module_red, 4, 4);
+       // print_double_matrix(module_red, 4, 4);
         
         *module = (Image *)malloc(sizeof(Image));
 
@@ -281,13 +283,18 @@ void PARALLEL_image_FFT(Image *in, Image **module, Image *phase, int rank, int s
         (*module)->blue = module_blue;
 
         (*module)->max_color = 255;
-        printf("MODULE POPULATION DONE\n");
-        printf("TEST RED\n");
-        print_double_matrix((*module)->red, 4, 4);
-        printf("TEST GREEN\n");
-        print_double_matrix((*module)->green, 4, 4);
-        printf("TEST BLUE\n");
-        print_double_matrix((*module)->blue, 4, 4);
+
+        *phase = (Image *)malloc(sizeof(Image));
+
+        (*phase)->width = in->width;
+        (*phase)->height = in->height;
+
+        (*phase)->red = phase_red;
+        (*phase)->green = phase_green;
+        (*phase)->blue = phase_blue;
+
+        (*phase)->max_color = 255;
+
     }
     
 }
@@ -360,13 +367,17 @@ int main(int argc, char *argv[]) {
 
     double max_RGB = 0;
 
-    PARALLEL_image_FFT(img, &module, phase, rank, size, &max_RGB);
+    PARALLEL_image_FFT(img, &module, &phase, rank, size, &max_RGB);
     printf("the max_RGB: %f\n",max_RGB);
 
     if(rank == 0){
         double scale = (255 / max_RGB);
         printf("SCALE FACTOR = %f\n", scale);
 		writePPM(argv[2], module, scale);
+
+        scale = (255 / 2*M_PI);
+        printf("SCALE FACTOR = %f\n", scale);
+		writePPM(argv[3], phase, scale);
     }
 
     MPI_Finalize();
