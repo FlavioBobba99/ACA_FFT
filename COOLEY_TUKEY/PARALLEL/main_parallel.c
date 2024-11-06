@@ -117,7 +117,8 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 
 
 
-
+    free(local_module);
+    free(local_phase);
 
     double complex **FFT_pt1 = NULL;
     double complex **FFT_pt1_transposed = NULL;
@@ -241,6 +242,12 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
         FFT_pt1_transposed = transpose_complex_matrix(FFT_pt1, width, height);
         //printf("TRANSPOSED MATRIX\n");
         //print_complex_matrix(FFT_pt1_transposed, width, height);
+
+        free_complex_matrix(FFT_pt1, height);
+        free(local_complex_chunk);
+        free(local_chunk);
+        free(gathered_vector);
+        free(local_FFT_output);
 
 	}
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
