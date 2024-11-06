@@ -271,3 +271,16 @@ double find_max_in_double_vector(double *in, int lenght){
     }
     return max;
 }
+
+double find_max_in_double_vector_and_logscale(double *in, int lenght){
+
+    double max = 0;
+
+    for(int i = 0; i < lenght; i++){
+        if(in[i]>max){
+            
+            max = in[i];
+        }
+    }
+    return max;
+}

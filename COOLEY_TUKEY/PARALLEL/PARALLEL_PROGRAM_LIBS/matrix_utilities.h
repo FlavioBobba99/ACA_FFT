@@ -43,4 +43,6 @@ extern double complex *double_to_complex_vector(double *input_vector, int lenght
 
 extern double find_max_in_double_vector(double *in, int lenght);
 
+extern double find_max_in_double_vector_and_logscale(double *in, int lenght);
+
 #endif
