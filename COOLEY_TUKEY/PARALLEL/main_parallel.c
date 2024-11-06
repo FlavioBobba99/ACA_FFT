@@ -94,6 +94,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
         local_phase[i] = carg(local_FFT_output[i]);
     }
 
+    free(local_FFT_output);
 
    // printf("Local moudle test\n");
    // print_double_vector(local_module, elements_per_process[rank]);
@@ -153,6 +154,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
         //print_double_matrix(*module_matrix, height, width);
         free(gathered_module);
         free(gathered_phase);
+        free(local_chunk);
 	}
 }
 
