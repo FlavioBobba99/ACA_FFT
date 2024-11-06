@@ -26,9 +26,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
     int elements_accumulator = 0;
 
     for(int i = 0; i < size; i++){
-        //ERROR IN COUNTIING THE ELEMENTS 
         elements_per_process[i] = (i == size -1) ? baseline_elements + remaining_elements : baseline_elements;
-        //POSSIBLE ERROR IN -1
         displacements[i] = (i == 0) ? 0 : elements_accumulator;
         elements_accumulator += elements_per_process[i]; 
     }
@@ -36,16 +34,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
     double complex *flat_complex_matrix = NULL;
 
     if (rank == 0){
-		
-		//printf("Elements per core vector:\n");
-		//print_int_vector(elements_per_process, size);
-
-		//printf("Displacements vector:\n");
-		//print_int_vector(displacements, size);
-
         flat_complex_matrix = flatten_complex_matrix(matrix, width, height);
-       // printf("Flattened complex matrix from FFT PT2\n");
-       // print_complex_vector(flat_complex_matrix, width*height);
     }
     
 
@@ -54,22 +43,13 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
     MPI_Scatterv(flat_complex_matrix, elements_per_process, displacements, MPI_C_DOUBLE_COMPLEX,
                  local_chunk, elements_per_process[rank], MPI_C_DOUBLE_COMPLEX,
                  0, MPI_COMM_WORLD);
-    
-   // printf("- - - - - - PROCESS %d - - - - - - - - - - - -\n", rank);
-  //  printf("Elements of process %d has to handle: %d\n", rank, elements_per_process[rank]);
-  //  print_complex_vector(local_chunk, elements_per_process[rank]);
-   // printf("-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  \n");
 
     double complex *local_FFT_output = malloc(elements_per_process[rank] * sizeof(double complex));
 
     for(int i = 0; i < elements_per_process[rank]; i += width){
-       // printf("DEBUG INDEXES i = %d\n", i);
        FFT_complex_with_range(local_chunk, i, local_FFT_output, width);
     }
-    // printf("FFT OUPTUT TEST FROM CORE %d\n", rank);
-    // print_complex_vector(local_FFT_output, elements_per_process[rank]);
-    
-    // Allocate space for the full matrix only on the root process
+
     double *gathered_module = NULL;
     double *gathered_phase = NULL;
     double *gathered_max_values = NULL;
@@ -78,10 +58,8 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 	if (rank == 0){
 
         gathered_module = malloc( width * height * sizeof(double)); 
-		//printf("gathered module allocated \n");
 
         gathered_phase = malloc( width * height * sizeof(double)); 
-		//printf("gathered phase allocated \n");
 
         gathered_max_values = (double*)malloc(size * sizeof(double));
 	}
@@ -96,16 +74,7 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 
     free(local_FFT_output);
 
-   // printf("Local moudle test\n");
-   // print_double_vector(local_module, elements_per_process[rank]);
-   // printf("Local phase test\n");
-   // print_double_vector(local_phase, elements_per_process[rank]);
-
-	// Gather the data from all processes to process 0
-    
-
     double local_max_module = find_max_in_double_vector_and_logscale(local_module, elements_per_process[rank]);
-    //printf("Local max from process %d = %f\n", rank, local_max_module);
 
     MPI_Gatherv(local_module, elements_per_process[rank], MPI_DOUBLE,
             gathered_module, elements_per_process, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -119,43 +88,22 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 
     free(local_module);
     free(local_phase);
-
-    double complex **FFT_pt1 = NULL;
-    double complex **FFT_pt1_transposed = NULL;
 	
 	if (rank == 0){
-	//	printf("Gathered Vector\n");
-	//	print_complex_vector(gathered_vector, height * width);
-     //   printf("Gathered module\n");
-     //   print_double_vector(gathered_module, width * height);
-     //   printf("Gathered phase\n");
-    //    print_double_vector(gathered_phase, width * height);
 
         *module_matrix = unflatten_double_matrix(gathered_module, width, height);
         *phase_matrix = unflatten_double_matrix(gathered_phase, width, height);
 
-        //print_double_matrix(module_matrix, height, width);
-        //print_double_matrix(phase_matrix, height, width);
-
-
         *color_max = find_max_in_double_vector(gathered_max_values, size);
-       // printf("Current color_max is %f\n", *color_max);
-        //FFT_pt1 = unflatten_complex_matrix(gathered_vector, width, height);
-       // printf("FINAL RESULT\n");
-       // printf("UNFLATTENED MATRIX\n");
-       // print_complex_matrix(FFT_pt1, height, width);
-    // ATTENZIONE AGGIUNGERE TRASPOSTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        //FFT_pt1_transposed = transpose_complex_matrix(FFT_pt1, width, height);
-
-        //print_complex_matrix(FFT_pt1_transposed, width, height);
 
         *module_matrix = transpose_double_matrix(*module_matrix, width, height);
         *phase_matrix = transpose_double_matrix(*phase_matrix, width, height);
 
-        //print_double_matrix(*module_matrix, height, width);
         free(gathered_module);
         free(gathered_phase);
         free(local_chunk);
+        free(elements_per_process);
+        free(displacements);
 	}
 }
 
@@ -181,17 +129,7 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
 
     
     if (rank == 0){
-		
-		//printf("Elements per core vector:\n");
-		//print_int_vector(elements_per_process, size);
-
-		//printf("Displacements vector:\n");
-		//print_int_vector(displacements, size);
-			
-        //printf("Process %d reached flattening stage\n", rank); 
         flat_matrix = flatten_double_matrix(matrix, height, width);
-        //printf("Debug flattened matrix:\n");
-        //print_double_vector(flat_matrix, height*width);
     }
     
 
@@ -201,30 +139,19 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
                  local_chunk, elements_per_process[rank], MPI_DOUBLE,
                  0, MPI_COMM_WORLD);
     
-    /*printf("- - - - - - PROCESS %d - - - - - - - - - - - -\n", rank);
-    printf("Elements of process %d has to handle: %d\n", rank, elements_per_process[rank]);
-    print_double_vector(local_chunk, elements_per_process[rank]);
-    printf("-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  \n");*/
-    
     double complex *local_complex_chunk = double_to_complex_vector(local_chunk, elements_per_process[rank]);
     double complex *local_FFT_output = malloc(elements_per_process[rank] * sizeof(double complex));
 
     for(int i = 0; i < elements_per_process[rank]; i += width){
-        //printf("DEBUG INDEXES i = %d\n", i);
         FFT_complex_with_range(local_complex_chunk, i, local_FFT_output, width);
     }
-    //printf("FFT OUPTUT TEST FROM CORE %d\n", rank);
-    //print_complex_vector(local_FFT_output, elements_per_process[rank]);
     
-    // Allocate space for the full matrix only on the root process
 	double complex *gathered_vector = NULL;
 	
 	if (rank == 0){
 		gathered_vector = malloc( width * height * sizeof(double complex)); 
-		//printf("gathered vector allocated \n");
 	}
 	
-	// Gather the data from all processes to process 0
 	MPI_Gatherv(local_FFT_output, elements_per_process[rank], MPI_C_DOUBLE_COMPLEX,
             gathered_vector, elements_per_process, displacements, MPI_C_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD);
 
@@ -232,22 +159,17 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
     double complex **FFT_pt1_transposed = NULL;
 	
 	if (rank == 0){
-		//printf("Gathered Vector\n");
-		//print_complex_vector(gathered_vector, height * width);
         FFT_pt1 = unflatten_complex_matrix(gathered_vector, width, height);
-        //printf("FIRST FFT STEP\n\n");
-        //printf("UNFLATTENED MATRIX\n");
-        //print_complex_matrix(FFT_pt1, height, width);
 
         FFT_pt1_transposed = transpose_complex_matrix(FFT_pt1, width, height);
-        //printf("TRANSPOSED MATRIX\n");
-        //print_complex_matrix(FFT_pt1_transposed, width, height);
 
         free_complex_matrix(FFT_pt1, height);
         free(local_complex_chunk);
         free(local_chunk);
         free(gathered_vector);
         free(local_FFT_output);
+        free(elements_per_process);
+        free(displacements);
 
 	}
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
@@ -343,6 +265,8 @@ int main(int argc, char *argv[]) {
     int rank, size;
 
     Image *img = NULL;
+    Image *phase = NULL;
+    Image *module = NULL;
 
     MPI_Init(&argc, &argv);
 
@@ -359,15 +283,6 @@ int main(int argc, char *argv[]) {
         img_width = img->width;
         img_height = img->height;
     }
-
-    //double *local_chunk = NULL;
-    double **matrix_module_output = NULL;
-    double **matrix_phase_output = NULL;
-
-    Image *phase = NULL;
-    Image *module = NULL;
-
-    //PARALLEL_FFT_matrix(test_matrix, TEST_MATRIX_HEIGTH, TEST_MATRIX_WIDTH, rank, size, matrix_module_output, matrix_phase_output);
 
     MPI_Bcast(&img_height, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&img_width, 1, MPI_INT, 0, MPI_COMM_WORLD);
