@@ -271,3 +271,18 @@ double find_max_in_double_vector(double *in, int lenght){
     }
     return max;
 }
+
+double find_max_in_double_vector_and_logscale(double *in, int length){
+
+    double max_value = -INFINITY; // Start with the smallest possible value
+
+    for (int i = 0; i < length; i++) {
+        
+        in[i] = 20 * log10(in[i]);
+        if (in[i] > max_value) {
+            max_value = in[i];
+        }
+    }
+
+    return max_value;
+}
