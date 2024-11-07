@@ -4,12 +4,19 @@
 #include <complex.h>
 #include <math.h>
 #include <malloc.h>
+#include <time.h>  // For clock_gettime
 
 #include "./SERIAL_PROGRAM_LIBS/images_handling.h"
 #include "./SERIAL_PROGRAM_LIBS/matrix_utilities.h"
 #include "./SERIAL_PROGRAM_LIBS/FFTs.h"
 
 int main(int argc, char *argv[]) {
+
+    // Initialize timespec structures for start and end times
+    struct timespec start, end;
+
+    // Record start time
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     // Check if the correct number of arguments is provided
     if (argc != 4) {
@@ -48,8 +55,23 @@ int main(int argc, char *argv[]) {
     free_image(padded_image);
     free_image(module);
     free_image(phase);
-    
+
     printf("...Process done.\n");
-    
+
+    // Record end time
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    // Calculate the elapsed time in seconds and nanoseconds
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
+    // Open the file to save execution times
+    FILE *file = fopen("execution_times.txt", "a");
+    if (file) {
+        fprintf(file, "Image: %s | Execution time: %.9f seconds\n", argv[1], elapsed_time);
+        fclose(file);
+    } else {
+        fprintf(stderr, "Failed to open execution_times.txt for writing\n");
+    }
+
     return 0;
 }

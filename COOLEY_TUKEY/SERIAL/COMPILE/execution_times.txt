@@ -1,0 +1,1 @@
+Image: /home/fede/Documenti/ACA_FFT/IMAGES/Pizza_pixel.ppm | Execution time: 1.290670050 seconds
