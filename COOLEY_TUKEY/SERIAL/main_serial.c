@@ -11,6 +11,7 @@
 
 int main(int argc, char *argv[]) {
 
+    // Check if the correct number of arguments is provided
     if (argc != 4) {
         fprintf(stderr, "Correct usage: %s <image_path> <module_output_path> <phase_output_path>\n", argv[0]);
         printf("Arguments detected %d\n", argc);
@@ -19,53 +20,35 @@ int main(int argc, char *argv[]) {
     
     printf("Process start...\n");
 
-    const char *filename = argv[1];
-    Image *img = read_ppm(filename);
-    Image *module;
-    Image *phase;
+    const char *filename = argv[1];  // Input image file path
+    Image *img = read_ppm(filename); // Read the input image in PPM format
+    // Placeholder for the module and phase output
+    Image *module;  
+    Image *phase;   
 
+    // Allocate memory for the module and phase images
     module = (Image *)malloc(sizeof(Image));
     phase = (Image *)malloc(sizeof(Image));
 
+    // Pad the input image to prepare for FFT
     Image *padded_image = pad_image(img);
 
-    int rows = 4, cols = 4;
+    // Perform FFT on the padded image and store results in module and phase images
+    FFT_image(padded_image, module, phase);
 
-    // Dynamically allocate memory for the matrix
-    double complex **matrix = malloc(rows * sizeof(double complex*));
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = malloc(cols * sizeof(double complex));
-    }
-
-    // Initialize the matrix with some values
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            matrix[i][j] = 1 + 0 * I;
-        }
-    }
-
-    //double complex **result_matrix = matrix_FFT(matrix, 4,4);
-    
-    //print_complex_matrix(result_matrix, 4, 4);
-
-    FFT_image(padded_image,module,phase);
-
+    // Write the phase image to the specified output path with scaling
     writePPM(argv[3], phase, find_scale_factor(phase));
 
+    // Apply logarithmic scaling to the module image for visualization and save it
     Image* module_log = log_scale(module);
     writePPM(argv[2], module_log, find_scale_factor(module_log));
 
-    //printf("Image trnasformed and saved!\n");
-
-    //printf("Freeing original image\n");
+    // Free dynamically allocated memory for images and complex matrices
     free_image(img);
-    //printf("Freeing padded image\n");
     free_image(padded_image);
-
-    //printf("Freeing module image\n");
     free_image(module);
-    //printf("Freeing phase image\n");
     free_image(phase);
+    
     printf("...Process done.\n");
     
     return 0;
