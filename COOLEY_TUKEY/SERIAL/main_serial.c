@@ -16,6 +16,8 @@ int main(int argc, char *argv[]) {
         printf("Arguments detected %d\n", argc);
         return 1;
     }
+    
+    printf("Process start...\n");
 
     const char *filename = argv[1];
     Image *img = read_ppm(filename);
@@ -42,9 +44,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    double complex **result_matrix = matrix_FFT(matrix, 4,4);
+    //double complex **result_matrix = matrix_FFT(matrix, 4,4);
     
-    print_complex_matrix(result_matrix, 4, 4);
+    //print_complex_matrix(result_matrix, 4, 4);
 
     FFT_image(padded_image,module,phase);
 
@@ -53,17 +55,18 @@ int main(int argc, char *argv[]) {
     Image* module_log = log_scale(module);
     writePPM(argv[2], module_log, find_scale_factor(module_log));
 
-    printf("Image trnasformed and saved!\n");
+    //printf("Image trnasformed and saved!\n");
 
-    printf("Freeing original image\n");
+    //printf("Freeing original image\n");
     free_image(img);
-    printf("Freeing padded image\n");
+    //printf("Freeing padded image\n");
     free_image(padded_image);
 
-    printf("Freeing module image\n");
+    //printf("Freeing module image\n");
     free_image(module);
-    printf("Freeing phase image\n");
+    //printf("Freeing phase image\n");
     free_image(phase);
+    printf("...Process done.\n");
     
     return 0;
 }

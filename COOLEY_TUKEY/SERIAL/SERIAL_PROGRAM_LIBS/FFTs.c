@@ -105,7 +105,7 @@ double complex **matrix_FFT (double complex **matrix, int width, int height) {
             }
             free(out_vect);
 		}
-    printf("----------------- DEBUG ----------------\n");
+    //printf("----------------- DEBUG ----------------\n");
     
     for (int i = 0; i < width; i++) {
             double complex *out_vect = FFT_complex(temporary_transposed_matrix[i], height);
@@ -142,7 +142,7 @@ void FFT_image(Image *in, Image *module, Image *phase){
     double complex **temp_green = convert_to_complex_matrix(in->green, height, width);
     double complex **temp_blue = convert_to_complex_matrix(in->blue, height, width);
 
-    printf("Matrices converted :)\n");
+    //printf("Matrices converted :)\n");
 
     // Check if matrix_FFT handles memory properly
     double complex **complex_red = matrix_FFT(temp_red, width, height);

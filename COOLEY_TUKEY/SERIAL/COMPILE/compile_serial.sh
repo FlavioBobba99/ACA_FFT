@@ -7,7 +7,7 @@ OUTPUT_NAME="../serial"
 SRC_FILES="../main_serial.c ../SERIAL_PROGRAM_LIBS/matrix_utilities.c ../SERIAL_PROGRAM_LIBS/FFTs.c ../SERIAL_PROGRAM_LIBS/images_handling.c"
 
 # GCC compiler flags
-CFLAGS="-Wall"
+CFLAGS="-Wall -pg"  # Added -pg for profiling
 
 LIBFLAG="-lm"
 
@@ -21,3 +21,4 @@ if [ $? -eq 0 ]; then
 else
     echo "Compilation failed."
 fi
+

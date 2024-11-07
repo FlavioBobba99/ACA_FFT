@@ -151,6 +151,22 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
         phase_matrix = transpose_double_matrix(phase_matrix, width, height);
 
         print_double_matrix(module_matrix, height, width);
+        
+        // At the end of FFT_pt2
+free(elements_per_process);
+free(displacements);
+free(local_chunk);
+free(local_FFT_output);
+free(local_module);
+free(local_phase);
+
+if (rank == 0) {
+    free(flat_complex_matrix);
+    free(gathered_module);
+    free(gathered_phase);
+    free(gathered_max_values);
+}
+
 	}
 }
 
@@ -240,6 +256,19 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
 
 	}
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
+    
+    // At the end of PARALLEL_FFT_matrix
+free(elements_per_process);
+free(displacements);
+free(local_chunk);
+free(local_complex_chunk);
+free(local_FFT_output);
+
+if (rank == 0) {
+    free(flat_matrix);
+    free(gathered_vector);
+}
+
 }
 
 void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int size, double *global_max){
@@ -259,6 +288,8 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
     PARALLEL_FFT_matrix(in->green, in->height,in->width, rank, size, module_green, phase_green, &max_RGB[1]);
     PARALLEL_FFT_matrix(in->blue, in->height,in->width, rank, size, module_blue, phase_blue, &max_RGB[2]);
 
+	printf("HEREEE\n");
+	print_double_matrix(module_red, 4, 4);
     if(rank == 0){
         print_double_vector(max_RGB, 3);
         double global_max_RGB = find_max_in_double_vector(max_RGB, 3);
@@ -285,7 +316,20 @@ void PARALLEL_image_FFT(Image *in, Image *module, Image *phase, int rank, int si
         print_double_matrix(module->red, 4, 4);
     }
     
+    // At the end of PARALLEL_image_FFT
+
+    free(module->red);
+    free(module->green);
+    free(module->blue);
+    free(module);
+    
+    free(phase->red);
+    free(phase->green);
+    free(phase->blue);
+    free(phase);
 }
+
+    
 
 int main(int argc, char *argv[]) {
 
@@ -365,6 +409,8 @@ int main(int argc, char *argv[]) {
     }
 
     MPI_Finalize();
+    
+     free_image(img);
 
     return 0;
     

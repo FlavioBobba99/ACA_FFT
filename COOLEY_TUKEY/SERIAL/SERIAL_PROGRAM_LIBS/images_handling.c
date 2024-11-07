@@ -59,13 +59,13 @@ Image *read_ppm(const char *filename) {
 
 void free_image(Image *img) {
     free_matrix(img->red, img->height);
-    printf("FREE_MATRIX_IMG_DEBUG\n");
+    //printf("FREE_MATRIX_IMG_DEBUG\n");
     free_matrix(img->green, img->height);
-    printf("FREE_MATRIX_IMG_DEBUG\n");
+    //printf("FREE_MATRIX_IMG_DEBUG\n");
     free_matrix(img->blue, img->height);
-    printf("FREE_MATRIX_IMG_DEBUG\n");
+    //printf("FREE_MATRIX_IMG_DEBUG\n");
     free(img);
-    printf("FREE_IMG_DEBUG\n");
+    //printf("FREE_IMG_DEBUG\n");
 }
 
 /*
@@ -206,8 +206,8 @@ double find_scale_factor(Image *img){
     }
     
     scale = (255 / max_value);
-    printf("SCALE FACTOR = %f\n", scale);
-    printf("MAX VALUE = %f\n", max_value);
+    //printf("SCALE FACTOR = %f\n", scale);
+    //printf("MAX VALUE = %f\n", max_value);
     return scale;
 }
 
@@ -281,7 +281,7 @@ Image* log_scale (Image* img){
             log_out->blue[i][j] = 20*log10(img->blue[i][j]);
         }
     }
-    printf("scale convertion done!\n");
+    //printf("scale convertion done!\n");
 
     return log_out;
 }
