@@ -1,1 +1,5 @@
 Image: /home/fede/Documenti/ACA_FFT/IMAGES/Pizza_pixel.ppm | Execution time: 1.290670050 seconds
+Image: /home/fede/Documenti/ACA_FFT/IMAGES/color_gradient_test28x28_.ppm | Execution time: 0.005801649 seconds
+Image: /home/fede/Documenti/ACA_FFT/IMAGES/hills_4k.ppm | Execution time: 50.356873358 seconds
+Image: /home/fede/Documenti/ACA_FFT/IMAGES/blue16x16.ppm | Execution time: 0.011734597 seconds
+Image: /home/fede/Documenti/ACA_FFT/IMAGES/blue2048x2048.ppm | Execution time: 5.132366923 seconds
