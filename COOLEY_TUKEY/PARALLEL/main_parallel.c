@@ -16,6 +16,8 @@
 
 void FFT_pt2(double complex **matrix, int height, int width, int rank, int size, double ***module_matrix, double ***phase_matrix, double *color_max){
 
+	double func_start_time = MPI_Wtime();
+
     int* elements_per_process = (int*)malloc(size * sizeof(int));
     int* displacements = (int*)malloc(size * sizeof(int));
 
@@ -105,9 +107,14 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
         free(elements_per_process);
         free(displacements);
 	}
+	
+	double func_end_time = MPI_Wtime();
+    printf("Execution time of FFT_pt2: %f seconds\n", func_end_time - func_start_time);
 }
 
 void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int size, double ***matrix_module_out, double ***matrix_phase_out,double *color_max){
+
+	double func_start_time = MPI_Wtime();
 
     int* elements_per_process = (int*)malloc(size * sizeof(int));
     int* displacements = (int*)malloc(size * sizeof(int));
@@ -173,9 +180,15 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
 
 	}
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
+    
+    double func_end_time = MPI_Wtime();
+    printf("Execution time of PARALLEL_FFT_MATRIX: %f seconds\n", func_end_time - func_start_time);
+    
 }
 
 void PARALLEL_image_FFT(Image *in, Image **module, Image **phase, int rank, int size, double *global_max){
+
+	double func_start_time = MPI_Wtime();
 
     double **module_channel = NULL;
     double **phase_channel = NULL;
@@ -251,6 +264,9 @@ void PARALLEL_image_FFT(Image *in, Image **module, Image **phase, int rank, int 
         *global_max = global_max_RGB;
        // printf("The global RGB max is %f\n", global_max_RGB);
     }
+    
+    double func_end_time = MPI_Wtime();
+    printf("Execution time of PARALLEL_image_FFT: %f seconds\n", func_end_time - func_start_time);
 }
 
 
@@ -272,6 +288,8 @@ int main(int argc, char *argv[]) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	double start_time = MPI_Wtime();
 
     int img_width, img_height;
     if (rank == 0){
@@ -311,14 +329,17 @@ int main(int argc, char *argv[]) {
         //printf("SCALE FACTOR = %f\n", scale);
 		writePPM(argv[3], phase, scale);
     }
+    
+    double end_time = MPI_Wtime();
 
     MPI_Finalize();
 
     printf("RUN SUCCESSFUL\n");
+    printf("Total execution time of main: %f seconds\n", end_time - start_time);
     return 0;
     
     //fede
-    //mpirun -n 3 ../parallel /home/fede/Documenti/ACA_FFT/IMAGES/blue16x16.ppm /home/fede/Documenti/ACA_FFT/IMAGES/output/out1.ppm /home/fede/Documenti/ACA_FFT/IMAGES/output/out2.ppm
+    //mpirun -n 4 ../parallel /home/fede/Documenti/ACA_FFT/IMAGES/blue16x16.ppm /home/fede/Documenti/ACA_FFT/IMAGES/output/module.ppm /home/fede/Documenti/ACA_FFT/IMAGES/output/phase.ppm
 
 
     //flavio
