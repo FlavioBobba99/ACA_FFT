@@ -109,7 +109,10 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 	}
 	
 	double func_end_time = MPI_Wtime();
-    printf("Execution time of FFT_pt2: %f seconds\n", func_end_time - func_start_time);
+	
+	if (rank == 0){
+		printf("Execution time of FFT_PT2: %f seconds\n", func_end_time - func_start_time);
+	}
 }
 
 void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int size, double ***matrix_module_out, double ***matrix_phase_out,double *color_max){
@@ -182,7 +185,10 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
     FFT_pt2(FFT_pt1_transposed, width, height, rank, size, matrix_module_out, matrix_phase_out, color_max);
     
     double func_end_time = MPI_Wtime();
-    printf("Execution time of PARALLEL_FFT_MATRIX: %f seconds\n", func_end_time - func_start_time);
+    
+    if (rank == 0){
+		printf("Execution time of PARALLEL_FFT_MATRIX: %f seconds\n", func_end_time - func_start_time);
+	}
     
 }
 
@@ -266,7 +272,10 @@ void PARALLEL_image_FFT(Image *in, Image **module, Image **phase, int rank, int 
     }
     
     double func_end_time = MPI_Wtime();
-    printf("Execution time of PARALLEL_image_FFT: %f seconds\n", func_end_time - func_start_time);
+    
+    if (rank == 0){
+		printf("Execution time of PARALLEL_IMAGE_FFT: %f seconds\n", func_end_time - func_start_time);
+	}
 }
 
 
@@ -320,7 +329,7 @@ int main(int argc, char *argv[]) {
    // printf("the max_RGB: %f\n",max_RGB);
 
     if(rank == 0){
-        printf("SAVING IMAGE\n");
+        //printf("SAVING IMAGE\n");
         double scale = (255 / max_RGB);
       //  printf("SCALE FACTOR = %f\n", scale);
 		writePPM(argv[2], module, scale);
@@ -333,9 +342,13 @@ int main(int argc, char *argv[]) {
     double end_time = MPI_Wtime();
 
     MPI_Finalize();
-
-    printf("RUN SUCCESSFUL\n");
-    printf("Total execution time of main: %f seconds\n", end_time - start_time);
+	
+    if (rank == 0){
+		printf("- - - - - - - - - -\n");
+		printf("RUN SUCCESSFULLY\n");
+		printf("Total execution time of main: %f seconds\n", end_time - start_time);
+		
+	}
     return 0;
     
     //fede

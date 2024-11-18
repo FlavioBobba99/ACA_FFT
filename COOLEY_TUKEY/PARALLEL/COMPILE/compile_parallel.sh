@@ -17,7 +17,8 @@ mpicc $CFLAGS $SRC_FILES -o $OUTPUT_NAME $LIBFLAG
 
 # Check if compilation was successful
 if [ $? -eq 0 ]; then
-    echo "Compilation successful. Output: $OUTPUT_NAME"
+    echo "Compilation successful."
+    echo "Output: $OUTPUT_NAME"
 else
     echo "Compilation failed."
 fi
