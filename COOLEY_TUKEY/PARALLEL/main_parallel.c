@@ -36,7 +36,14 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
     double complex *flat_complex_matrix = NULL;
 
     if (rank == 0){
+
+        double start_second_flatten = MPI_Wtime();
+
         flat_complex_matrix = flatten_complex_matrix(matrix, width, height);
+
+        double end_second_flatten = MPI_Wtime();
+
+        printf("execution time of second flattening: %f\n", end_second_flatten-start_second_flatten);
     }
     
 
@@ -93,13 +100,24 @@ void FFT_pt2(double complex **matrix, int height, int width, int rank, int size,
 	
 	if (rank == 0){
 
+        double start_second_unflatten = MPI_Wtime();
+
         *module_matrix = unflatten_double_matrix(gathered_module, width, height);
         *phase_matrix = unflatten_double_matrix(gathered_phase, width, height);
 
+        double end_second_unflatten = MPI_Wtime();
+        printf("Execution time of final unflatten (must it divided by 2): %f\n", end_second_unflatten-start_second_unflatten);
+
         *color_max = find_max_in_double_vector(gathered_max_values, size);
+
+        double start_final_tranpose_time = MPI_Wtime();
 
         *module_matrix = transpose_double_matrix(*module_matrix, width, height);
         *phase_matrix = transpose_double_matrix(*phase_matrix, width, height);
+
+        double end_final_transpose_time = MPI_Wtime();
+
+        printf("Execution time of final transposition (must it divided by 2): %f\n", end_final_transpose_time-start_final_tranpose_time);
 
         free(gathered_module);
         free(gathered_phase);
@@ -139,7 +157,12 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
 
     
     if (rank == 0){
+
+        double start_flatten_time = MPI_Wtime();
         flat_matrix = flatten_double_matrix(matrix, height, width);
+        double end_flatten_time = MPI_Wtime();
+
+        printf("Execution time of first flattening: %f\n", end_flatten_time-start_flatten_time);
     }
     
 
@@ -169,9 +192,22 @@ void PARALLEL_FFT_matrix(double **matrix, int height, int width, int rank, int s
     double complex **FFT_pt1_transposed = NULL;
 	
 	if (rank == 0){
+
+        double start_unflatten_time = MPI_Wtime();
+
         FFT_pt1 = unflatten_complex_matrix(gathered_vector, width, height);
 
+        double end_unflatten_time = MPI_Wtime();
+
+        printf("Execution time of first unflatten: %f\n", end_unflatten_time-start_unflatten_time);
+
+        double start_complex_transpose = MPI_Wtime();
+
         FFT_pt1_transposed = transpose_complex_matrix(FFT_pt1, width, height);
+
+        double end_complex_transpose = MPI_Wtime();
+
+        printf("Execution time of first complex transposition: %f\n", end_complex_transpose-start_complex_transpose);
 
         free_complex_matrix(FFT_pt1, height);
         free(local_complex_chunk);
